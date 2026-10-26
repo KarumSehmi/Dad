@@ -24,8 +24,10 @@ Edit [`site.config.ts`](site.config.ts) to change:
 - `tribute`, the few words under the name (one string per paragraph)
 - `timeZone`, used to date each memory
 
-The photo at the top of the home page is easiest to set from the site itself:
-sign in at `/admin`, open any shared photo, and press **Use as main photo**.
+The photo at the top of the home page is `public/images/harvey.jpg` (set by
+`portrait` in `site.config.ts`). A family admin can also swap it from the site
+itself: sign in at `/admin`, open any shared photo, and press **Use as main
+photo**.
 
 ## Putting it online (Vercel)
 
@@ -99,5 +101,9 @@ saved in a local `.data` folder instead.
   justified rows, and [`components/Lightbox.tsx`](components/Lightbox.tsx) is
   the full-screen viewer.
 
-Optional environment variable: `SESSION_SECRET` (any long random string)
-signs photo receipts. It isn't needed on Vercel, where the Blob token is used.
+Optional environment variables:
+
+- `SITE_URL`, the site's full address (e.g. `https://harveysehmi.com`), used
+  for link previews. Defaults to Vercel's production domain.
+- `SESSION_SECRET` (any long random string) signs photo receipts. It isn't
+  needed on Vercel, where the Blob token is used.

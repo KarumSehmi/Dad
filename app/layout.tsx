@@ -31,6 +31,9 @@ async function previewImage(): Promise<NonNullable<Metadata["openGraph"]>["image
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
+    // Full web address used in link previews. Without SITE_URL, Vercel's
+    // production domain is used.
+    metadataBase: process.env.SITE_URL ? new URL(process.env.SITE_URL) : undefined,
     title: { default: `${site.name} · In loving memory`, template: `%s · ${site.name}` },
     description: site.tribute[0],
     openGraph: {

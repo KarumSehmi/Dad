@@ -16,11 +16,11 @@ export const site = {
     "A place for family and friends to share photos, stories and memories of Harvey.",
   ],
 
-  // Optional photo for the top of the page, e.g. "/images/harvey.jpg" for a
-  // file saved as public/images/harvey.jpg. Signed-in family admins can also
-  // pick any shared photo as the main photo from the site itself, which
-  // takes priority over this.
-  portrait: "",
+  // The photo at the top of the page: a file in the public folder, so
+  // public/images/harvey.jpg is "/images/harvey.jpg". Leave empty to show his
+  // initials instead. A signed-in family admin can also pick any shared photo
+  // as the main photo from the site itself, which takes priority over this.
+  portrait: "/images/harvey.jpg",
 
   // How dates are written on the site.
   locale: "en-GB",

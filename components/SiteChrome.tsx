@@ -13,7 +13,7 @@ export function SiteHeader() {
           <NavLinks />
           <Link href="/share" className="btn btn-primary btn-sm">
             <span>
-              Share<span className="hide-small"> a memory</span>
+              Share<span data-hide-below="640"> a memory</span>
             </span>
           </Link>
         </nav>
