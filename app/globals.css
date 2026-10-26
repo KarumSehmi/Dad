@@ -466,10 +466,10 @@ code {
 
 .site-footer-inner {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 6px;
+  text-align: center;
 }
 
 .site-footer p {
@@ -481,6 +481,7 @@ code {
 
 .footer-link {
   color: var(--ink-3);
+  font-size: 0.82rem;
   text-decoration: none;
 }
 

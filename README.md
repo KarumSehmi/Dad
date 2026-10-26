@@ -89,9 +89,11 @@ stored with the photos.
 
 ## Looking after the site
 
-Go to `/admin` (there's a **Family admin** link at the bottom of every page)
-and sign in with `ADMIN_PASSWORD`. While signed in on that device you'll see:
+Go to `/admin` (for example `harveysehmi.com/admin`) and sign in with
+`ADMIN_PASSWORD`. Nothing on the site links there, so visitors won't come
+across it; bookmark it. While signed in on that device you'll see:
 
+- A **Family admin** link at the bottom of every page, back to `/admin`
 - **Delete memory** under each memory
 - **Delete** and **Use as main photo** when you open any photo (videos can be
   deleted but not used as the main photo)

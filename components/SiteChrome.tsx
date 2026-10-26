@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { site } from "@/site.config";
+import { AdminFooterLink } from "./AdminFooterLink";
 import { NavLinks } from "./NavLinks";
 
 export function SiteHeader() {
@@ -27,9 +28,8 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="container site-footer-inner">
         <p>In loving memory of {site.name}</p>
-        <Link href="/admin" className="footer-link">
-          Family admin
-        </Link>
+        {/* The admin page is at /admin; there's deliberately no link to it for visitors. */}
+        <AdminFooterLink />
       </div>
     </footer>
   );
