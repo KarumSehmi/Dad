@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { site } from "@/site.config";
+import { FlameIcon } from "./icons";
 import { NavLinks } from "./NavLinks";
 
 export function SiteHeader() {
@@ -26,7 +27,10 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="container site-footer-inner">
-        <p>In loving memory of {site.name}</p>
+        <p>
+          <FlameIcon width={16} height={16} />
+          In loving memory of {site.name}
+        </p>
         <Link href="/admin" className="footer-link">
           Family admin
         </Link>

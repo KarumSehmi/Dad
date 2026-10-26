@@ -3,6 +3,7 @@ import Link from "next/link";
 import { count, initials } from "@/lib/format";
 import type { Photo } from "@/lib/types";
 import { lifeDates, site } from "@/site.config";
+import { FlameIcon } from "./icons";
 
 export function Hero({
   portrait,
@@ -54,6 +55,9 @@ export function Hero({
             {count(memoryCount, "memory", "memories")} and {count(photoCount, "photo", "photos")} shared so far
           </p>
         )}
+        <div className="ornament" aria-hidden="true">
+          <FlameIcon width={18} height={18} />
+        </div>
       </div>
     </section>
   );

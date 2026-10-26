@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FlameIcon } from "@/components/icons";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { galleryPhotos, getMemories } from "@/lib/data";
 import { count } from "@/lib/format";
@@ -33,6 +34,7 @@ export default async function PhotosPage() {
         <PhotoGrid photos={photos} />
       ) : (
         <div className="empty">
+          <FlameIcon width={26} height={26} />
           <p>No photos yet.</p>
           <p>If you have a photo of {site.firstName}, it would mean a lot to share it here.</p>
           <Link href="/share" className="btn btn-primary">

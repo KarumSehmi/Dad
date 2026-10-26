@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { Hero } from "@/components/Hero";
+import { FlameIcon } from "@/components/icons";
+import { InviteButton } from "@/components/InviteButton";
 import { MemoryCard } from "@/components/MemoryCard";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { StorageNotice } from "@/components/StorageNotice";
+import { ThankYouToast } from "@/components/ThankYouToast";
 import { galleryPhotos, getMemories, getSettings } from "@/lib/data";
 import { count } from "@/lib/format";
 import { site } from "@/site.config";
@@ -42,6 +45,7 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="empty">
+            <FlameIcon width={26} height={26} />
             <p>Nothing has been shared yet.</p>
             <p>
               Be the first to share a photo or a few words about {site.firstName}.
@@ -58,7 +62,14 @@ export default async function HomePage() {
             </Link>
           </div>
         )}
+
+        <div className="invite">
+          <p>Know someone who knew {site.firstName}? Send them the link so they can share their memories too.</p>
+          <InviteButton />
+        </div>
       </section>
+
+      <ThankYouToast />
     </>
   );
 }

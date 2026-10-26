@@ -7,10 +7,10 @@
   --surface: #fffcf7;
   --ink: #2b2520;
   --ink-2: #5b524a;
-  --ink-3: #7e7367;
+  --ink-3: #6e6357;
   --line: #e5dccf;
   --line-strong: #d2c6b5;
-  --accent: #8a6a3e;
+  --accent: #7a5c33;
   --accent-soft: #f0e6d5;
   --danger: #a13e2d;
   --danger-soft: #f7e5df;
@@ -83,6 +83,12 @@ input,
 textarea {
   font: inherit;
   color: inherit;
+}
+
+a,
+button,
+label {
+  -webkit-tap-highlight-color: transparent;
 }
 
 :focus-visible {
@@ -235,7 +241,13 @@ code {
   text-align: center;
 }
 
-.empty > :first-child {
+.empty > svg:first-child {
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+
+.empty > :first-child,
+.empty > svg + p {
   color: var(--ink);
   font-family: var(--serif);
   font-size: 1.6rem;
@@ -248,6 +260,65 @@ code {
 
 .empty .btn {
   margin-top: 12px;
+}
+
+.invite {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
+.invite p {
+  max-width: 30rem;
+  color: var(--ink-2);
+}
+
+.toast {
+  position: fixed;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 12px 8px 12px 20px;
+  background: var(--ink);
+  border-radius: 16px;
+  box-shadow: 0 14px 36px rgb(30 24 18 / 28%);
+  color: var(--surface);
+  transform: translateX(-50%);
+  animation: toast-in 0.45s ease both;
+}
+
+.toast svg {
+  flex: none;
+}
+
+.toast button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: inherit;
+  cursor: pointer;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 12px);
+  }
 }
 
 .notice {
@@ -281,6 +352,10 @@ code {
     background-color 0.15s,
     border-color 0.15s,
     color 0.15s;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .btn:disabled {
@@ -336,7 +411,7 @@ code {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgb(246 241 233 / 88%);
+  background: rgb(246 241 233 / 95%);
   border-bottom: 1px solid var(--line);
   backdrop-filter: saturate(1.4) blur(10px);
   -webkit-backdrop-filter: saturate(1.4) blur(10px);
@@ -408,10 +483,17 @@ code {
 }
 
 .site-footer p {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   color: var(--ink-2);
   font-family: var(--serif);
   font-size: 1.15rem;
   font-style: italic;
+}
+
+.site-footer p svg {
+  color: var(--accent);
 }
 
 .footer-link {
@@ -514,6 +596,42 @@ code {
   font-size: 0.88rem;
 }
 
+.hero-inner > * {
+  animation: rise 0.9s 0.15s ease both;
+}
+
+.hero-inner > .hero-portrait {
+  animation-delay: 0s;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.ornament {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(280px, 70%);
+  margin-top: 36px;
+  color: var(--accent);
+}
+
+.ornament::before,
+.ornament::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-strong));
+}
+
+.ornament::after {
+  background: linear-gradient(90deg, var(--line-strong), transparent);
+}
+
 /* ---------------------------------------------------------------------------
    Photo grid: justified rows. PhotoGrid.tsx decides which photos share a row
    (separately for phones and larger screens) and inserts break elements; each
@@ -600,8 +718,10 @@ code {
   transition: transform 0.4s ease;
 }
 
-.photo-tile:hover img {
-  transform: scale(1.03);
+@media (hover: hover) {
+  .photo-tile:hover img {
+    transform: scale(1.03);
+  }
 }
 
 .photo-more {
@@ -632,7 +752,8 @@ code {
   scroll-margin-top: calc(var(--header-h) + 20px);
 }
 
-.memory:target {
+.memory:target,
+.memory.is-new {
   border-color: var(--accent);
   box-shadow:
     0 0 0 3px var(--accent-soft),
@@ -724,7 +845,8 @@ code {
   border: 0;
 }
 
-.field > label,
+/* The photo drop zone is a label too, but styles itself. */
+.field > label:not(.dropzone),
 .field > legend {
   padding: 0;
   font-size: 0.97rem;
@@ -756,7 +878,7 @@ textarea {
 
 input::placeholder,
 textarea::placeholder {
-  color: #a29684;
+  color: #8c8070;
 }
 
 input:focus,
@@ -1000,6 +1122,7 @@ textarea {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  overscroll-behavior: contain;
   background: #14110e;
   border: 0;
   color: #f3ede4;

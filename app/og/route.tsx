@@ -44,10 +44,10 @@ export async function GET() {
         <svg width="56" height="56" viewBox="0 0 64 64">
           <path
             d="M32 9c1.6 7.5-6.5 11-6.5 19.5a6.5 6.5 0 0 0 13 0c0-3.2-1.6-5.4-2.7-7.6 5.4 2.2 10.2 8.1 10.2 16.7A14 14 0 0 1 32 51.6a14 14 0 0 1-14-14C18 24.8 29.8 18.5 32 9z"
-            fill="#8a6a3e"
+            fill="#7a5c33"
           />
         </svg>
-        <div style={{ marginTop: 22, fontSize: 30, letterSpacing: 9, color: "#8a6a3e", textTransform: "uppercase" }}>
+        <div style={{ marginTop: 22, fontSize: 30, letterSpacing: 9, color: "#7a5c33", textTransform: "uppercase" }}>
           In loving memory
         </div>
         <div style={{ marginTop: 6, fontSize: 128, lineHeight: 1.1 }}>{site.name}</div>

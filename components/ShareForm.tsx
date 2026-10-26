@@ -8,6 +8,7 @@ import type { Photo } from "@/lib/types";
 import { LIMITS } from "@/lib/validate";
 import { site } from "@/site.config";
 import { CloseIcon, PhotoIcon } from "./icons";
+import { THANKS_KEY } from "./ThankYouToast";
 
 type Uploaded = { photo: Photo; receipt: string };
 
@@ -198,8 +199,9 @@ export function ShareForm() {
       }
       try {
         localStorage.setItem(REMEMBERED, JSON.stringify({ name, relationship }));
+        sessionStorage.setItem(THANKS_KEY, JSON.stringify({ id: result.id, name }));
       } catch {
-        // Not being able to remember the name next time is fine.
+        // Not being able to remember the name or say thank you is fine.
       }
       setPhase({ step: "done" });
       router.push(result.id ? `/#m-${result.id}` : "/");
@@ -237,7 +239,7 @@ export function ShareForm() {
           id="relationship"
           name="relationship"
           maxLength={LIMITS.relationship}
-          placeholder="e.g. Nephew, school friend, neighbour"
+          placeholder="e.g. Nephew, school friend"
           disabled={busy}
         />
       </div>
