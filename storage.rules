@@ -2,14 +2,14 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Videos shared on Harvey's memorial site. Anyone can watch them and
-    // add new ones (video files under 500 MB), but nobody can browse the
+    // Videos shared on Harvey's memorial site, each saved at the top level as
+    // video-<32 hex digits>.<ext> (see lib/video.ts). Anyone can watch them
+    // and add new ones (video files under 500 MB), but nobody can browse the
     // list, or change or delete what's there.
-    match /videos/{id}/{file} {
-      allow get: if true;
+    match /{file} {
+      allow get: if file.matches('video-[0-9a-f]{32}[.][a-z0-9]{2,4}');
       allow create: if resource == null
-        && id.matches('[0-9a-f]{32}')
-        && file.matches('video[.][a-z0-9]{2,4}')
+        && file.matches('video-[0-9a-f]{32}[.][a-z0-9]{2,4}')
         && request.resource.size < 500 * 1024 * 1024
         && request.resource.contentType.matches('video/.+');
     }

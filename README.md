@@ -108,7 +108,8 @@ Changing `ADMIN_PASSWORD` signs everyone out.
 
 Deleting a video takes it off the site, but the site can't remove the file
 from Firebase (its rules don't allow deleting). If a video must be gone for
-good, delete its folder under `videos/` in the Firebase console's Storage page.
+good, delete its file (named `video-` plus a long code, shown at the end of
+the video's web address) in the Firebase console's Storage page.
 
 Everything shared is visible to anyone with the link, and search engines are
 asked not to list the site. Set `allowSearchEngines: true` in `site.config.ts`
@@ -144,8 +145,8 @@ saved in a local `.data` folder instead.
   justified rows, and [`components/Lightbox.tsx`](components/Lightbox.tsx) is
   the full-screen viewer.
 - Videos go straight from the browser to Firebase Storage
-  ([`lib/upload-video.ts`](lib/upload-video.ts)), at
-  `videos/<id>/video.<ext>`. Before that, [`lib/prepare-video.ts`](lib/prepare-video.ts)
+  ([`lib/upload-video.ts`](lib/upload-video.ts)), as
+  `video-<id>.<ext>`. Before that, [`lib/prepare-video.ts`](lib/prepare-video.ts)
   takes a still from the video, which is uploaded like a photo and stands in
   for it in galleries, and [`lib/video-location.ts`](lib/video-location.ts)
   blanks the location in its metadata. When the memory is saved, the server

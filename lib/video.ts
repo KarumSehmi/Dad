@@ -1,8 +1,7 @@
 // Videos are far too big for the site's own storage (Vercel Blob, whose free
 // plan holds 1 GB in total), so they go straight from the sharer's browser to
-// a Firebase Storage bucket, at videos/<id>/video.<ext>. Each video also gets
-// a still frame, uploaded like any other photo, which stands in for it in
-// galleries.
+// a Firebase Storage bucket, as video-<id>.<ext>. Each video also gets a still
+// frame, uploaded like any other photo, which stands in for it in galleries.
 //
 // Videos are switched on by setting NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET (see
 // the README); the bucket's rules are in storage.rules.
@@ -37,8 +36,11 @@ export function isVideoExtension(ext: string): boolean {
 /** New video ids are 32 random hex digits (the storage rules check this). */
 export const VIDEO_ID = /^[0-9a-f]{32}$/;
 
+// Kept at the top of the bucket, with no folders: Firebase writes a folder's
+// "/" as "%2F" in the file's web address, and some networks rewrite that
+// back to "/", which Firebase then refuses, so the video wouldn't play.
 export function videoPath(id: string, ext: string): string {
-  return `videos/${id}/video.${ext}`;
+  return `video-${id}.${ext}`;
 }
 
 /** Firebase's address for a stored file: its details as JSON, or with ?alt=media, the file itself. */
