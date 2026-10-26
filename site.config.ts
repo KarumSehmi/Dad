@@ -8,12 +8,12 @@ export const site = {
 
   // Optional. Shown under the name, e.g. born: "1952", died: "2026"
   // (or full dates such as "3 March 1952"). Leave empty to hide.
-  born: "",
+  born: "1975",
   died: "",
 
   // A few words shown under the name. Each string is its own paragraph.
   tribute: [
-    "Harvey would want us smiling, so this is a place for the good stuff: your favourite photos, funny stories and the times he made you laugh.",
+    "I couldn’t find a picture of Harvey where he wasn’t smiling. This is for your favourite photos, funny stories and times he made you laugh.",
   ],
 
   // The photo at the top of the page: a file in the public folder, so
