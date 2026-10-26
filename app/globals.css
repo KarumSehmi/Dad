@@ -519,7 +519,7 @@ code {
   margin-bottom: 40px;
 }
 
-/* A white-bordered print, a little crooked, held on with a strip of tape. */
+/* A white-bordered print, a little crooked. */
 .polaroid {
   position: relative;
   padding: 12px 12px 46px;
@@ -530,19 +530,6 @@ code {
     0 20px 44px rgb(60 30 10 / 20%);
   transform: rotate(-2.5deg);
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.polaroid::before {
-  content: "";
-  position: absolute;
-  top: -15px;
-  left: 50%;
-  z-index: 1;
-  width: 104px;
-  height: 30px;
-  background: rgb(242 169 59 / 72%);
-  box-shadow: 0 1px 2px rgb(60 30 10 / 12%);
-  transform: translateX(-50%) rotate(4deg);
 }
 
 @media (hover: hover) {

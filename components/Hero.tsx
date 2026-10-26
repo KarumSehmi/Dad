@@ -18,7 +18,7 @@ export function Hero({
   return (
     <section className="hero">
       <div className="container hero-inner">
-        {/* A snapshot, pinned up like a polaroid. */}
+        {/* A snapshot, like a polaroid. */}
         <div className="hero-photo">
           <div className="polaroid">
             <div className="polaroid-picture">
