@@ -13,7 +13,7 @@ export const site = {
 
   // A few words shown under the name. Each string is its own paragraph.
   tribute: [
-    "A place to celebrate Harvey. Share your favourite photos, stories and the times he made you laugh.",
+    "Harvey would want us smiling, so this is a place for the good stuff: your favourite photos, funny stories and the times he made you laugh.",
   ],
 
   // The photo at the top of the page: a file in the public folder, so

@@ -47,7 +47,7 @@ export default async function HomePage() {
           <div className="empty">
             <p>Nothing has been shared yet.</p>
             <p>
-              Be the first to share a photo or a few words about {site.firstName}.
+              Be the first to share a favourite photo or a story about {site.firstName} that makes you smile.
             </p>
             <Link href="/share" className="btn btn-primary">
               Share a memory
