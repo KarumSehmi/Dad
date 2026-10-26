@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { galleryPhotos, getMemories } from "@/lib/data";
-import { count } from "@/lib/format";
+import { joinList, mediaCounts } from "@/lib/format";
 import { site } from "@/site.config";
 
 export const metadata: Metadata = {
@@ -12,6 +12,7 @@ export const metadata: Metadata = {
 
 export default async function PhotosPage() {
   const photos = galleryPhotos(await getMemories());
+  const hasVideos = photos.some((photo) => photo.video);
 
   return (
     <section className="section container page-top" aria-labelledby="photos-title">
@@ -20,7 +21,9 @@ export default async function PhotosPage() {
           <h1 id="photos-title">Photos of {site.firstName}</h1>
           <p className="page-lede">
             {photos.length > 0
-              ? `${count(photos.length, "photo", "photos")} shared by family and friends. Tap any photo to see it larger.`
+              ? `${joinList(mediaCounts(photos))} shared by family and friends. Tap any photo to see it larger${
+                  hasVideos ? ", or a video to play it" : ""
+                }.`
               : "Photos shared by family and friends will appear here."}
           </p>
         </div>

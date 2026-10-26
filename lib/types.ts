@@ -1,3 +1,14 @@
+export type Video = {
+  /** Where it plays from (Firebase Storage, see lib/video.ts). */
+  url: string;
+  /** As uploaded, e.g. "video/mp4". */
+  type: string;
+  /** In bytes. */
+  size: number;
+  /** In seconds, as measured by the sharer's browser. */
+  duration?: number;
+};
+
 export type Photo = {
   id: string;
   url: string;
@@ -6,6 +17,8 @@ export type Photo = {
   /** Average colour, shown while the photo loads. */
   color: string;
   caption?: string;
+  /** Set when this is a video. The photo is then a still from it. */
+  video?: Video;
 };
 
 export type Memory = {

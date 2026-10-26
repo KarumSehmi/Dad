@@ -24,8 +24,9 @@ import {
   saveMemory,
   saveSettings,
 } from "@/lib/storage";
-import type { ActionResult, Memory, Photo } from "@/lib/types";
+import type { ActionResult, Memory, Photo, Video } from "@/lib/types";
 import { cleanText, isHexColor, LIMITS } from "@/lib/validate";
+import { isVideoExtension, storedFileUrl, VIDEO_ID, videoPath, videosEnabled } from "@/lib/video";
 import { isListedRelationship } from "@/site.config";
 
 export type NewMemoryInput = {
@@ -34,8 +35,11 @@ export type NewMemoryInput = {
   message?: string;
   /** Hidden field that only bots fill in. */
   website?: string;
-  photos: { photo: Photo; receipt: string; caption?: string }[];
+  /** For a video, `photo` is a still from it and `video` says where the browser uploaded it. */
+  photos: { photo: Photo; receipt: string; caption?: string; video?: UploadedVideo }[];
 };
+
+export type UploadedVideo = { id: string; ext: string; duration?: number };
 
 const SAVE_FAILED = "Sorry, something went wrong while saving. Please try again in a moment.";
 
@@ -45,6 +49,35 @@ function asPhoto(value: unknown): Photo | null {
   if (typeof p.id !== "string" || typeof p.url !== "string" || !isHexColor(p.color)) return null;
   if (!Number.isInteger(p.width) || !Number.isInteger(p.height)) return null;
   return { id: p.id, url: p.url, width: p.width, height: p.height, color: p.color };
+}
+
+/**
+ * Checks with Firebase that the browser really did upload this video, and that
+ * it's a video of an allowed size, before it's added to the site.
+ */
+async function checkVideo(value: unknown): Promise<Video | null> {
+  const v = value as UploadedVideo | null;
+  if (!videosEnabled || !v || typeof v !== "object") return null;
+  if (typeof v.id !== "string" || !VIDEO_ID.test(v.id)) return null;
+  if (typeof v.ext !== "string" || !isVideoExtension(v.ext)) return null;
+  const path = videoPath(v.id, v.ext);
+  let stored: { name?: unknown; contentType?: unknown; size?: unknown };
+  try {
+    const res = await fetch(storedFileUrl(path), { cache: "no-store" });
+    if (!res.ok) return null;
+    stored = await res.json();
+  } catch (cause) {
+    console.error("Checking video failed", cause);
+    return null;
+  }
+  const size = Number(stored.size);
+  const type = typeof stored.contentType === "string" ? stored.contentType : "";
+  if (stored.name !== path || !type.startsWith("video/") || !(size > 0 && size < LIMITS.videoBytes)) return null;
+  const duration =
+    typeof v.duration === "number" && v.duration > 0 && v.duration < 24 * 60 * 60
+      ? Math.round(v.duration * 10) / 10
+      : undefined;
+  return { url: `${storedFileUrl(path)}?alt=media`, type, size, ...(duration && { duration }) };
 }
 
 export async function createMemory(input: NewMemoryInput): Promise<ActionResult<{ id: string }>> {
@@ -62,8 +95,12 @@ export async function createMemory(input: NewMemoryInput): Promise<ActionResult<
   const message = cleanText(input.message, LIMITS.message, { multiline: true });
   if (!name) return { ok: false, error: "Please add your name." };
 
+  const items = Array.isArray(input.photos) ? input.photos.slice(0, LIMITS.photosPerMemory) : [];
+  if (items.filter((item) => item?.video).length > LIMITS.videosPerMemory) {
+    return { ok: false, error: `Please share up to ${LIMITS.videosPerMemory} videos at a time.` };
+  }
   const photos: Photo[] = [];
-  for (const item of Array.isArray(input.photos) ? input.photos.slice(0, LIMITS.photosPerMemory) : []) {
+  for (const item of items) {
     const photo = asPhoto(item?.photo);
     if (!photo || typeof item.receipt !== "string" || !verifyPhoto(photo, item.receipt)) {
       return { ok: false, error: "One of the photos didn't upload properly. Please remove it and add it again." };
@@ -71,8 +108,15 @@ export async function createMemory(input: NewMemoryInput): Promise<ActionResult<
     const caption = cleanText(item.caption, LIMITS.caption);
     photos.push(caption ? { ...photo, caption } : photo);
   }
+  const videos = await Promise.all(items.map((item) => (item.video ? checkVideo(item.video) : undefined)));
+  for (const [i, video] of videos.entries()) {
+    if (video === null) {
+      return { ok: false, error: "One of the videos didn't finish uploading. Please remove it and add it again." };
+    }
+    if (video) photos[i] = { ...photos[i], video };
+  }
   if (!message && photos.length === 0) {
-    return { ok: false, error: "Please write a message or add at least one photo." };
+    return { ok: false, error: "Please write a message, or add a photo or video." };
   }
 
   const memory: Memory = {
@@ -152,6 +196,7 @@ export async function setPortrait(memoryId: string, photoId: string): Promise<Ac
   try {
     const photo = (await readMemory(String(memoryId)))?.photos.find((p) => p.id === photoId);
     if (!photo) return { ok: false, error: "That photo no longer exists." };
+    if (photo.video) return { ok: false, error: "A video can't be the main photo." };
     const { settings, rev } = await readSettings();
     await saveSettings({ ...settings, portrait: photo }, rev + 1);
   } catch (cause) {

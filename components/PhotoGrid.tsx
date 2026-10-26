@@ -2,8 +2,10 @@
 
 import Image from "next/image";
 import { Fragment, type CSSProperties } from "react";
+import { formatDuration } from "@/lib/format";
 import { splitRows } from "@/lib/justify";
 import type { GalleryPhoto } from "@/lib/types";
+import { PlayIcon } from "./icons";
 import { useLightbox } from "./Lightbox";
 
 // How photos are grouped into rows. `phone`/`desktop` are the target sum of
@@ -62,7 +64,7 @@ export function PhotoGrid({
     <ul className={`photo-grid photo-grid-${variant}`} style={style}>
       {shown.map((photo, i) => {
         const more = hidden > 0 && i === shown.length - 1 ? hidden : 0;
-        const label = photo.caption || `Photo shared by ${photo.sharedBy}`;
+        const label = photo.caption || `${photo.video ? "Video" : "Photo"} shared by ${photo.sharedBy}`;
         const phoneVw = Math.ceil((ratios[i] / phone.rowSum[i]) * 95);
         const desktopPx = Math.ceil(Math.min((ratios[i] / desktop.rowSum[i]) * v.width, ratios[i] * v.maxHeight));
         const breaks = [phone.breakAfter.has(i) && "br-m", desktop.breakAfter.has(i) && "br-d"].filter(Boolean);
@@ -73,7 +75,7 @@ export function PhotoGrid({
                 type="button"
                 className="photo-tile"
                 onClick={() => open(photos, i)}
-                aria-label={more ? `${label}, and ${more} more photos` : label}
+                aria-label={more ? `${label}, and ${more} more` : label}
               >
                 <Image
                   src={photo.url}
@@ -82,6 +84,14 @@ export function PhotoGrid({
                   sizes={`(max-width: 640px) ${phoneVw}vw, ${desktopPx}px`}
                   style={{ backgroundColor: photo.color }}
                 />
+                {photo.video && !more && (
+                  <>
+                    <span className="play-button" aria-hidden="true">
+                      <PlayIcon width={22} height={22} />
+                    </span>
+                    {photo.video.duration ? <span className="video-time">{formatDuration(photo.video.duration)}</span> : null}
+                  </>
+                )}
                 {more > 0 && <span className="photo-more">+{more}</span>}
               </button>
             </li>

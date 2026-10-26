@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Inter } from "next/font/google";
 import { LightboxProvider } from "@/components/Lightbox";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { getSettings } from "@/lib/data";
+import { optimizedImageUrl } from "@/lib/format";
 import { site } from "@/site.config";
 import "./globals.css";
 
@@ -20,7 +21,7 @@ const sans = Inter({ subsets: ["latin"], variable: "--font-sans" });
 // apps prefer), otherwise the name card drawn by app/og/route.tsx.
 async function previewImage(): Promise<NonNullable<Metadata["openGraph"]>["images"]> {
   const { portrait } = await getSettings();
-  const optimized = (src: string) => `/_next/image?url=${encodeURIComponent(src)}&w=1080&q=75`;
+  const optimized = (src: string) => optimizedImageUrl(src, 1080);
   if (portrait) {
     const width = Math.min(1080, portrait.width);
     return [{ url: optimized(portrait.url), width, height: Math.round((width * portrait.height) / portrait.width), alt: site.name }];

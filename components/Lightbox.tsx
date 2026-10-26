@@ -10,10 +10,11 @@ import {
   useRef,
   useState,
   useTransition,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import { deletePhoto, setPortrait } from "@/app/actions";
-import { downloadUrl, formatDate } from "@/lib/format";
+import { downloadUrl, formatDate, optimizedImageUrl } from "@/lib/format";
 import type { GalleryPhoto } from "@/lib/types";
 import { useIsAdmin } from "@/lib/use-is-admin";
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, DownloadIcon, StarIcon, TrashIcon } from "./icons";
@@ -76,6 +77,8 @@ function Lightbox({
   useEffect(() => {
     if (!many) return;
     function onKey(event: KeyboardEvent) {
+      // Arrow keys on a video move through it instead.
+      if (event.target instanceof HTMLVideoElement) return;
       if (event.key === "ArrowRight") go(1);
       if (event.key === "ArrowLeft") go(-1);
     }
@@ -91,10 +94,18 @@ function Lightbox({
         <span className="lb-count">{many ? `${index + 1} of ${photos.length}` : ""}</span>
         <div className="lb-tools">
           {isAdmin && <AdminPhotoTools key={photo.id} photo={photo} onDeleted={close} />}
-          <a className="lb-btn" href={downloadUrl(photo.url)} download>
-            <DownloadIcon />
-            <span className="lb-btn-label">Download</span>
-          </a>
+          {photo.video ? (
+            // Firebase serves videos from another site, so browsers open them rather than download them.
+            <a className="lb-btn" href={photo.video.url} target="_blank" rel="noreferrer" download>
+              <DownloadIcon />
+              <span className="lb-btn-label">Download</span>
+            </a>
+          ) : (
+            <a className="lb-btn" href={downloadUrl(photo.url)} download>
+              <DownloadIcon />
+              <span className="lb-btn-label">Download</span>
+            </a>
+          )}
           <button type="button" className="lb-btn" onClick={close} aria-label="Close">
             <CloseIcon />
           </button>
@@ -104,7 +115,8 @@ function Lightbox({
       <div
         className="lb-stage"
         onPointerDown={(e) => {
-          if (e.isPrimary) swipe.current = { x: e.clientX, y: e.clientY };
+          // Dragging on a video moves through it, so it isn't a swipe.
+          if (e.isPrimary && !(e.target instanceof HTMLVideoElement)) swipe.current = { x: e.clientX, y: e.clientY };
         }}
         onPointerUp={(e) => {
           const start = swipe.current;
@@ -124,24 +136,28 @@ function Lightbox({
         }}
       >
         {many && (
-          <button type="button" className="lb-nav lb-prev" onClick={() => go(-1)} aria-label="Previous photo">
+          <button type="button" className="lb-nav lb-prev" onClick={() => go(-1)} aria-label="Previous">
             <ChevronLeftIcon width={28} height={28} />
           </button>
         )}
-        <Image
-          key={photo.id}
-          src={photo.url}
-          width={photo.width}
-          height={photo.height}
-          sizes="100vw"
-          loading="eager"
-          alt={photo.caption || `Photo shared by ${photo.sharedBy}`}
-          className="lb-img"
-          style={{ backgroundColor: photo.color }}
-          draggable={false}
-        />
+        {photo.video ? (
+          <LightboxVideo key={photo.id} photo={photo} />
+        ) : (
+          <Image
+            key={photo.id}
+            src={photo.url}
+            width={photo.width}
+            height={photo.height}
+            sizes="100vw"
+            loading="eager"
+            alt={photo.caption || `Photo shared by ${photo.sharedBy}`}
+            className="lb-img"
+            style={{ backgroundColor: photo.color }}
+            draggable={false}
+          />
+        )}
         {many && (
-          <button type="button" className="lb-nav lb-next" onClick={() => go(1)} aria-label="Next photo">
+          <button type="button" className="lb-nav lb-next" onClick={() => go(1)} aria-label="Next">
             <ChevronRightIcon width={28} height={28} />
           </button>
         )}
@@ -174,6 +190,36 @@ function Lightbox({
   );
 }
 
+function LightboxVideo({ photo }: { photo: GalleryPhoto }) {
+  const [failed, setFailed] = useState(false);
+  const video = photo.video!;
+  if (failed) {
+    return (
+      <div className="lb-video-failed">
+        <p>This video won&apos;t play here.</p>
+        <a href={video.url} target="_blank" rel="noreferrer">
+          Open the video file
+        </a>
+      </div>
+    );
+  }
+  return (
+    <video
+      className="lb-img lb-video"
+      src={video.url}
+      poster={optimizedImageUrl(photo.url, 1080)}
+      width={photo.width}
+      height={photo.height}
+      controls
+      playsInline
+      preload="metadata"
+      aria-label={photo.caption || `Video shared by ${photo.sharedBy}`}
+      onError={() => setFailed(true)}
+      style={{ "--ar": photo.width / photo.height } as CSSProperties}
+    />
+  );
+}
+
 function AdminPhotoTools({ photo, onDeleted }: { photo: GalleryPhoto; onDeleted: () => void }) {
   const [pending, startTransition] = useTransition();
   const [status, setStatus] = useState("");
@@ -185,26 +231,29 @@ function AdminPhotoTools({ photo, onDeleted }: { photo: GalleryPhoto; onDeleted:
           {status}
         </span>
       )}
-      <button
-        type="button"
-        className="lb-btn"
-        disabled={pending}
-        onClick={() =>
-          startTransition(async () => {
-            const result = await setPortrait(photo.memoryId, photo.id);
-            setStatus(result.ok ? "Set as the main photo" : result.error);
-          })
-        }
-      >
-        <StarIcon />
-        <span className="lb-btn-label">Use as main photo</span>
-      </button>
+      {!photo.video && (
+        <button
+          type="button"
+          className="lb-btn"
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              const result = await setPortrait(photo.memoryId, photo.id);
+              setStatus(result.ok ? "Set as the main photo" : result.error);
+            })
+          }
+        >
+          <StarIcon />
+          <span className="lb-btn-label">Use as main photo</span>
+        </button>
+      )}
       <button
         type="button"
         className="lb-btn lb-danger"
         disabled={pending}
         onClick={() => {
-          if (!window.confirm("Delete this photo for everyone? This can't be undone.")) return;
+          const what = photo.video ? "video" : "photo";
+          if (!window.confirm(`Delete this ${what} for everyone? This can't be undone.`)) return;
           startTransition(async () => {
             const result = await deletePhoto(photo.memoryId, photo.id);
             if (result.ok) onDeleted();

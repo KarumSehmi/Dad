@@ -727,6 +727,53 @@ code {
   font-size: 2rem;
 }
 
+/* Videos: a play button in the middle and the running time in the corner. */
+.play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  background: rgb(20 17 14 / 55%);
+  border: 1.5px solid rgb(255 255 255 / 85%);
+  border-radius: 50%;
+  color: #fff;
+  transform: translate(-50%, -50%);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.video-time,
+.video-badge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  background: rgb(20 17 14 / 70%);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .play-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .play-button svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
 /* ---------------------------------------------------------------------------
    Memories
    --------------------------------------------------------------------------- */
@@ -1217,6 +1264,8 @@ textarea {
   justify-content: center;
   min-height: 0;
   padding: 0 72px;
+  /* Lets a video size itself to the space available (see .lb-video). */
+  container-type: size;
   touch-action: pan-y pinch-zoom;
   user-select: none;
   -webkit-user-select: none;
@@ -1230,6 +1279,35 @@ textarea {
   max-height: 100%;
   object-fit: contain;
   border-radius: 3px;
+}
+
+/* As large as fits while keeping its shape, so it doesn't jump in size when it
+   starts playing. Older browsers show it full size with bars instead. */
+.lb-video {
+  width: 100%;
+  height: 100%;
+}
+
+@supports (width: 1cqw) {
+  .lb-video {
+    width: min(100cqw, 100cqh * var(--ar));
+    height: auto;
+    max-height: 100cqh;
+    aspect-ratio: var(--ar);
+  }
+}
+
+.lb-video-failed {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  padding: 24px;
+  color: #d8cfc3;
+  text-align: center;
+}
+
+.lb-video-failed a {
+  color: #ead9b9;
 }
 
 .lb-preload {

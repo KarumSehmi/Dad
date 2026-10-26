@@ -63,3 +63,10 @@ export const PhotoIcon = (p: SVGProps<SVGSVGElement>) => (
     <path d="M21 16l-5-5-8 8" />
   </Icon>
 );
+
+/** A filled play triangle, nudged right so it looks centred in a circle. */
+export const PlayIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon fill="currentColor" stroke="none" {...p}>
+    <path d="M8.5 5.6v12.8a1 1 0 0 0 1.52.85l10.2-6.4a1 1 0 0 0 0-1.7l-10.2-6.4A1 1 0 0 0 8.5 5.6z" />
+  </Icon>
+);

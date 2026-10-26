@@ -2,8 +2,9 @@
 
 # Memorial site for Harvey Sehmi
 
-A Next.js 16 app (Cache Components on) deployed to Vercel, with Vercel Blob as
-the only storage. See README.md for features, setup and the storage layout.
+A Next.js 16 app (Cache Components on) deployed to Vercel, with Vercel Blob
+storing photos and memories, and Firebase Storage for videos. See README.md for
+features, setup and the storage layout.
 
 - Personal content (name, dates, tribute) lives in `site.config.ts`.
 - All writes go through `app/actions.ts` (server actions, which call
@@ -11,6 +12,10 @@ the only storage. See README.md for features, setup and the storage layout.
   cached getters in `lib/data.ts`.
 - Without `BLOB_READ_WRITE_TOKEN`, storage falls back to the local `.data`
   folder, so `npm run dev` works offline.
+- Videos skip Vercel entirely: the browser uploads them to Firebase Storage
+  (`lib/video.ts`), and they're off unless `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+  is set. `storage.rules` is what's published in Firebase; keep it in step
+  with `LIMITS.videoBytes`.
 - Keep the Vercel Hobby limits in mind (README, "Free plan limits"): avoid
   extra Blob `list`/`put` calls, and keep image widths limited in
   `next.config.ts`.

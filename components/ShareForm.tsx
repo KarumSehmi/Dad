@@ -2,12 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
-import { createMemory, type NewMemoryInput } from "@/app/actions";
+import { createMemory, type NewMemoryInput, type UploadedVideo } from "@/app/actions";
+import { formatDuration } from "@/lib/format";
 import { friendlyPhotoError, preparePhoto, type PreparedPhoto } from "@/lib/prepare-photo";
+import { isVideoFile, prepareVideo, VideoError, type PreparedVideo } from "@/lib/prepare-video";
 import type { Photo } from "@/lib/types";
+import { uploadVideo, videoUploadError } from "@/lib/upload-video";
 import { LIMITS } from "@/lib/validate";
+import { videosEnabled } from "@/lib/video";
 import { relationships, relationshipTitle, site } from "@/site.config";
-import { CloseIcon, PhotoIcon } from "./icons";
+import { CloseIcon, PhotoIcon, PlayIcon } from "./icons";
 import { THANKS_KEY } from "./ThankYouToast";
 
 type Uploaded = { photo: Photo; receipt: string };
@@ -15,15 +19,19 @@ type Uploaded = { photo: Photo; receipt: string };
 type Item = {
   key: string;
   fileName: string;
+  kind: "photo" | "video";
   status: "preparing" | "ready" | "failed";
+  /** The photo, or for a video, the still that stands in for it. */
   prepared?: PreparedPhoto;
+  video?: Omit<PreparedVideo, "poster">;
   uploaded?: Uploaded;
+  uploadedVideo?: UploadedVideo;
   error?: string;
 };
 
 type Phase =
   | { step: "idle" }
-  | { step: "uploading"; done: number; total: number }
+  | { step: "uploading"; done: number; total: number; fraction: number }
   | { step: "saving" }
   | { step: "done" };
 
@@ -112,31 +120,56 @@ export function ShareForm() {
 
   function addFiles(files: FileList | null) {
     if (!files?.length) return;
-    const room = LIMITS.photosPerMemory - items.length;
-    const accepted = Array.from(files).slice(0, Math.max(0, room));
-    setError(
-      files.length > room
-        ? `You can add up to ${LIMITS.photosPerMemory} photos at a time. Share the rest in another memory.`
-        : "",
-    );
-    const added: Item[] = accepted.map((file) => ({
+    let room = LIMITS.photosPerMemory - items.length;
+    let videoRoom = LIMITS.videosPerMemory - items.filter((item) => item.kind === "video").length;
+    const accepted: { file: File; kind: Item["kind"] }[] = [];
+    let skipped = "";
+    for (const file of Array.from(files)) {
+      const kind = isVideoFile(file) ? "video" : "photo";
+      if (room <= 0) {
+        const what = videosEnabled ? "photos and videos" : "photos";
+        skipped = `You can add up to ${LIMITS.photosPerMemory} ${what} at a time. Share the rest in another memory.`;
+      } else if (kind === "video" && videosEnabled && videoRoom <= 0) {
+        skipped = `You can add up to ${LIMITS.videosPerMemory} videos at a time. Share the rest in another memory.`;
+      } else {
+        accepted.push({ file, kind });
+        room -= 1;
+        if (kind === "video") videoRoom -= 1;
+      }
+    }
+    setError(skipped);
+    const added: Item[] = accepted.map(({ file, kind }) => ({
       key: `p${nextKey.current++}`,
       fileName: file.name,
+      kind,
       status: "preparing",
     }));
     setItems((current) => [...current, ...added]);
 
     // One at a time, so phones don't run out of memory with big batches.
-    accepted.forEach((file, i) => {
+    accepted.forEach(({ file, kind }, i) => {
       const { key } = added[i];
       queue.current = queue.current.then(async () => {
         if (removed.current.has(key)) return;
         try {
-          const prepared = await preparePhoto(file);
-          if (removed.current.has(key)) URL.revokeObjectURL(prepared.previewUrl);
-          else update(key, { status: "ready", prepared });
-        } catch {
-          update(key, { status: "failed", error: friendlyPhotoError(file) });
+          let change: Partial<Item>;
+          if (kind === "photo") {
+            change = { prepared: await preparePhoto(file) };
+          } else {
+            if (!videosEnabled) throw new VideoError("Videos can't be shared on this site yet.");
+            const { poster, ...video } = await prepareVideo(file);
+            change = { prepared: poster, video };
+          }
+          if (removed.current.has(key)) URL.revokeObjectURL(change.prepared!.previewUrl);
+          else update(key, { status: "ready", ...change });
+        } catch (cause) {
+          const error =
+            kind === "photo"
+              ? friendlyPhotoError(file)
+              : cause instanceof VideoError
+                ? cause.message
+                : "This video couldn't be opened.";
+          update(key, { status: "failed", error });
         }
       });
     });
@@ -171,23 +204,43 @@ export function ShareForm() {
       return;
     }
     if (items.some((item) => item.status === "preparing")) {
-      setError("Your photos are still being prepared. This only takes a moment.");
+      setError(`Your ${videosEnabled ? "photos and videos are" : "photos are"} still being prepared. This only takes a moment.`);
       return;
     }
     if (!message && ready.length === 0) {
-      setError("Please write a message or add at least one photo.");
+      setError(`Please write a message, or add a photo${videosEnabled ? " or video" : ""}.`);
       return;
     }
     setError("");
 
     try {
+      // Progress is measured in bytes, since one video can outweigh many photos.
+      const total = ready.reduce((sum, item) => sum + item.prepared!.blob.size + (item.video?.file.size ?? 0), 0);
+      let sent = 0;
       const photos: NewMemoryInput["photos"] = [];
       for (const [i, item] of ready.entries()) {
-        setPhase({ step: "uploading", done: i, total: ready.length });
+        const progress = (bytes: number) =>
+          setPhase({ step: "uploading", done: i, total: ready.length, fraction: (sent + bytes) / total });
+        progress(0);
+        // Each upload is remembered, so trying again after a failure doesn't repeat it.
         const uploaded = item.uploaded ?? (await uploadWithRetry(item.prepared!));
-        // Remember it, so trying again after a failure doesn't upload it twice.
         if (!item.uploaded) update(item.key, { uploaded });
-        photos.push({ ...uploaded, caption: text(`caption-${item.key}`) });
+        sent += item.prepared!.blob.size;
+
+        let video = item.uploadedVideo;
+        if (item.video && !video) {
+          try {
+            video = await uploadVideo(item.video, progress);
+          } catch (cause) {
+            throw new UploadError(videoUploadError(cause), false);
+          }
+          update(item.key, { uploadedVideo: video });
+        }
+        sent += item.video?.file.size ?? 0;
+
+        const caption = text(`caption-${item.key}`);
+        if (item.video) photos.push({ ...uploaded, caption, video: { ...video!, duration: item.video.duration } });
+        else photos.push({ ...uploaded, caption });
       }
 
       setPhase({ step: "saving" });
@@ -215,9 +268,12 @@ export function ShareForm() {
     }
   }
 
+  const hasVideo = items.some((item) => item.kind === "video" && item.status === "ready");
   const submitLabel =
     phase.step === "uploading"
-      ? `Uploading photo ${phase.done + 1} of ${phase.total}…`
+      ? hasVideo
+        ? `Uploading… ${Math.floor(phase.fraction * 100)}%`
+        : `Uploading photo ${phase.done + 1} of ${phase.total}…`
       : phase.step === "saving"
         ? "Saving…"
         : phase.step === "done"
@@ -254,7 +310,7 @@ export function ShareForm() {
 
       <div className="field">
         <label htmlFor="message">
-          Your message <span className="optional">(optional if you add photos)</span>
+          Your message <span className="optional">(optional if you add {videosEnabled ? "photos or videos" : "photos"})</span>
         </label>
         <textarea
           id="message"
@@ -268,7 +324,7 @@ export function ShareForm() {
 
       <fieldset className="field">
         <legend>
-          Photos <span className="optional">(optional)</span>
+          {videosEnabled ? "Photos and videos" : "Photos"} <span className="optional">(optional)</span>
         </legend>
 
         {items.length > 0 && (
@@ -281,8 +337,14 @@ export function ShareForm() {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={item.prepared.previewUrl} alt="" />
                   ) : item.status === "preparing" ? (
-                    <span className="spinner" aria-label="Preparing photo" />
+                    <span className="spinner" aria-label={`Preparing ${item.kind}`} />
                   ) : null}
+                  {item.kind === "video" && item.status === "ready" && (
+                    <span className="video-badge">
+                      <PlayIcon width={12} height={12} />
+                      {item.video?.duration ? formatDuration(item.video.duration) : "Video"}
+                    </span>
+                  )}
                   <button
                     type="button"
                     className="share-photo-remove"
@@ -323,7 +385,7 @@ export function ShareForm() {
         >
           <input
             type="file"
-            accept="image/*"
+            accept={videosEnabled ? "image/*,video/*" : "image/*"}
             multiple
             className="visually-hidden"
             disabled={busy || items.length >= LIMITS.photosPerMemory}
@@ -333,8 +395,19 @@ export function ShareForm() {
             }}
           />
           <PhotoIcon width={28} height={28} />
-          <span className="dropzone-title">{items.length ? "Add more photos" : "Add photos"}</span>
-          <span className="dropzone-hint">Choose from your phone or computer, up to {LIMITS.photosPerMemory} at a time</span>
+          <span className="dropzone-title">
+            {videosEnabled
+              ? items.length
+                ? "Add more"
+                : "Add photos or videos"
+              : items.length
+                ? "Add more photos"
+                : "Add photos"}
+          </span>
+          <span className="dropzone-hint">
+            Choose from your phone or computer, up to {LIMITS.photosPerMemory} at a time
+            {videosEnabled && ` (videos up to ${LIMITS.videoBytes / 1024 / 1024} MB each)`}
+          </span>
         </label>
       </fieldset>
 
@@ -362,13 +435,17 @@ export function ShareForm() {
             role="progressbar"
             aria-label="Upload progress"
             aria-valuemin={0}
-            aria-valuemax={phase.total}
-            aria-valuenow={phase.done}
+            aria-valuemax={100}
+            aria-valuenow={Math.floor(phase.fraction * 100)}
           >
-            <span style={{ width: `${(phase.done / phase.total) * 100}%` }} />
+            <span style={{ width: `${phase.fraction * 100}%` }} />
           </div>
         )}
-        <p className="form-note">Anyone with the link to this site will be able to see what you share.</p>
+        <p className="form-note">
+          {phase.step === "uploading" && hasVideo
+            ? "Videos can take a few minutes. Please keep this page open until it's finished."
+            : "Anyone with the link to this site will be able to see what you share."}
+        </p>
       </div>
     </form>
   );

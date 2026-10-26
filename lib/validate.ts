@@ -6,6 +6,10 @@ export const LIMITS = {
   photosPerMemory: 30,
   /** Per uploaded photo, after the browser has resized it. Vercel caps request bodies at 4.5 MB. */
   photoBytes: 4 * 1024 * 1024,
+  /** Counted within photosPerMemory. */
+  videosPerMemory: 10,
+  /** Videos must be smaller than this. Keep in step with storage.rules. */
+  videoBytes: 500 * 1024 * 1024,
 };
 
 // Control characters other than tab and newline.

@@ -13,7 +13,7 @@ export type PreparedPhoto = {
 const MAX_EDGE = 2048;
 const MAX_BYTES = 3.5 * 1024 * 1024;
 
-function canvas(width: number, height: number) {
+export function canvas(width: number, height: number) {
   const el = document.createElement("canvas");
   el.width = width;
   el.height = height;
@@ -58,6 +58,54 @@ export function friendlyPhotoError(file: File): string {
   return "This file couldn't be opened as a photo.";
 }
 
+/** Draws `source` (w × h) at no more than MAX_EDGE on its longest side. */
+export function scaledCanvas(source: CanvasImageSource, w: number, h: number): HTMLCanvasElement {
+  const scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+  const width = Math.max(1, Math.round(w * scale));
+  const height = Math.max(1, Math.round(h * scale));
+
+  // Halve repeatedly before the final resize; a single big jump looks soft.
+  let current = source;
+  let cw = w;
+  let ch = h;
+  let step: HTMLCanvasElement | null = null;
+  while (cw / 2 > width) {
+    cw = Math.round(cw / 2);
+    ch = Math.round(ch / 2);
+    const next = canvas(cw, ch);
+    next.ctx.drawImage(current, 0, 0, cw, ch);
+    if (step) release(step);
+    step = next.el;
+    current = next.el;
+  }
+
+  const out = canvas(width, height);
+  // Transparent areas (e.g. in PNGs) would otherwise turn black.
+  out.ctx.fillStyle = "#ffffff";
+  out.ctx.fillRect(0, 0, width, height);
+  out.ctx.drawImage(current, 0, 0, width, height);
+  if (step) release(step);
+  return out.el;
+}
+
+/** Encodes a canvas as a JPEG small enough to upload, then frees the canvas. */
+export async function encodePhoto(el: HTMLCanvasElement): Promise<PreparedPhoto> {
+  const { width, height } = el;
+  try {
+    const color = averageColor(el);
+    let quality = 0.86;
+    let blob = await toJpeg(el, quality);
+    while (blob.size > MAX_BYTES && quality > 0.5) {
+      quality -= 0.12;
+      blob = await toJpeg(el, quality);
+    }
+    if (blob.size > MAX_BYTES) throw new Error("Photo is still too large");
+    return { blob, width, height, color, previewUrl: URL.createObjectURL(blob) };
+  } finally {
+    release(el);
+  }
+}
+
 export async function preparePhoto(file: File): Promise<PreparedPhoto> {
   const sourceUrl = URL.createObjectURL(file);
   try {
@@ -66,44 +114,7 @@ export async function preparePhoto(file: File): Promise<PreparedPhoto> {
     await img.decode();
     const { naturalWidth: w, naturalHeight: h } = img;
     if (!w || !h) throw new Error("Image has no size");
-
-    const scale = Math.min(1, MAX_EDGE / Math.max(w, h));
-    const width = Math.max(1, Math.round(w * scale));
-    const height = Math.max(1, Math.round(h * scale));
-
-    // Halve repeatedly before the final resize; a single big jump looks soft.
-    let current: CanvasImageSource = img;
-    let cw = w;
-    let ch = h;
-    let step: HTMLCanvasElement | null = null;
-    while (cw / 2 > width) {
-      cw = Math.round(cw / 2);
-      ch = Math.round(ch / 2);
-      const next = canvas(cw, ch);
-      next.ctx.drawImage(current, 0, 0, cw, ch);
-      if (step) release(step);
-      step = next.el;
-      current = next.el;
-    }
-
-    const out = canvas(width, height);
-    // Transparent areas (e.g. in PNGs) would otherwise turn black.
-    out.ctx.fillStyle = "#ffffff";
-    out.ctx.fillRect(0, 0, width, height);
-    out.ctx.drawImage(current, 0, 0, width, height);
-    if (step) release(step);
-
-    const color = averageColor(out.el);
-    let quality = 0.86;
-    let blob = await toJpeg(out.el, quality);
-    while (blob.size > MAX_BYTES && quality > 0.5) {
-      quality -= 0.12;
-      blob = await toJpeg(out.el, quality);
-    }
-    release(out.el);
-    if (blob.size > MAX_BYTES) throw new Error("Photo is still too large");
-
-    return { blob, width, height, color, previewUrl: URL.createObjectURL(blob) };
+    return await encodePhoto(scaledCanvas(img, w, h));
   } finally {
     URL.revokeObjectURL(sourceUrl);
   }

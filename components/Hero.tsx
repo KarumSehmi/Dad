@@ -1,17 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
-import { count, initials } from "@/lib/format";
+import { count, initials, joinList } from "@/lib/format";
 import type { Photo } from "@/lib/types";
 import { lifeDates, site } from "@/site.config";
 
 export function Hero({
   portrait,
   memoryCount,
-  photoCount,
+  mediaCounts,
 }: {
   portrait?: Pick<Photo, "url" | "color">;
   memoryCount: number;
-  photoCount: number;
+  /** e.g. ["12 photos", "2 videos"] */
+  mediaCounts: string[];
 }) {
   const dates = lifeDates();
   return (
@@ -51,7 +52,7 @@ export function Hero({
         </div>
         {memoryCount > 0 && (
           <p className="hero-stats">
-            {count(memoryCount, "memory", "memories")} and {count(photoCount, "photo", "photos")} shared so far
+            {joinList([count(memoryCount, "memory", "memories"), ...mediaCounts])} shared so far
           </p>
         )}
         <div className="ornament" aria-hidden="true">

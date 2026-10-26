@@ -6,25 +6,26 @@ import { PhotoGrid } from "@/components/PhotoGrid";
 import { StorageNotice } from "@/components/StorageNotice";
 import { ThankYouToast } from "@/components/ThankYouToast";
 import { galleryPhotos, getMemories, getSettings } from "@/lib/data";
-import { count } from "@/lib/format";
+import { count, joinList, mediaCounts } from "@/lib/format";
 import { site } from "@/site.config";
 
 export default async function HomePage() {
   const [memories, settings] = await Promise.all([getMemories(), getSettings()]);
   const photos = galleryPhotos(memories);
+  const hasVideos = photos.some((photo) => photo.video);
   const portrait = settings.portrait ?? (site.portrait ? { url: site.portrait, color: "#d9cfc1" } : undefined);
 
   return (
     <>
       <StorageNotice />
-      <Hero portrait={portrait} memoryCount={memories.length} photoCount={photos.length} />
+      <Hero portrait={portrait} memoryCount={memories.length} mediaCounts={mediaCounts(photos)} />
 
       {photos.length > 0 && (
         <section className="section container" aria-labelledby="recent-photos">
           <div className="section-head">
-            <h2 id="recent-photos">Photos</h2>
+            <h2 id="recent-photos">{hasVideos ? "Photos and videos" : "Photos"}</h2>
             <Link href="/photos" className="section-link">
-              See all {count(photos.length, "photo", "photos")}
+              {hasVideos ? `See all ${photos.length.toLocaleString(site.locale)}` : `See all ${joinList(mediaCounts(photos))}`}
             </Link>
           </div>
           <PhotoGrid photos={photos} variant="strip" max={8} />
