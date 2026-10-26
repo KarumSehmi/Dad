@@ -37,14 +37,6 @@ type Phase =
 
 const REMEMBERED = "memorial:sharer";
 
-// Starting points for the message, to keep the stories happy ones.
-const STARTERS = [
-  `The funniest thing ${site.firstName} ever did was `,
-  `My favourite night out with ${site.firstName} was `,
-  `${site.firstName} always used to say `,
-  `I'll never forget the time ${site.firstName} `,
-];
-
 class UploadError extends Error {
   constructor(message: string, readonly retryable: boolean) {
     super(message);
@@ -181,14 +173,6 @@ export function ShareForm() {
         }
       });
     });
-  }
-
-  function addStarter(starter: string) {
-    const box = form.current!.elements.namedItem("message") as HTMLTextAreaElement;
-    const current = box.value.trimEnd();
-    box.value = current ? `${current}\n\n${starter}` : starter;
-    box.focus();
-    box.setSelectionRange(box.value.length, box.value.length);
   }
 
   function removeItem(item: Item) {
@@ -331,13 +315,6 @@ export function ShareForm() {
         <p className="field-hint" id="message-hint">
           {site.firstName} would want us smiling, so share something that makes you laugh or smile.
         </p>
-        <div className="starters" role="group" aria-label="Ideas to get you started">
-          {STARTERS.map((starter) => (
-            <button key={starter} type="button" className="starter" onClick={() => addStarter(starter)} disabled={busy}>
-              {starter.trim()}…
-            </button>
-          ))}
-        </div>
         <textarea
           id="message"
           name="message"

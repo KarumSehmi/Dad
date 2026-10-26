@@ -941,33 +941,6 @@ code {
   font-size: 0.92rem;
 }
 
-/* Tappable story starters above the message box. */
-.starters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 4px 0 6px;
-}
-
-.starter {
-  padding: 7px 13px;
-  background: var(--accent-soft);
-  border: 1px solid transparent;
-  border-radius: 999px;
-  color: var(--accent-hover);
-  font-size: 0.86rem;
-  font-weight: 500;
-  line-height: 1.3;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
-}
-
-.starter:hover:not(:disabled) {
-  border-color: var(--accent);
-  background: #fff;
-}
-
 input:not([type="file"]),
 select,
 textarea {
