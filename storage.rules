@@ -13,5 +13,11 @@ service firebase.storage {
         && request.resource.size < 500 * 1024 * 1024
         && request.resource.contentType.matches('video/.+');
     }
+
+    // The first videos were saved in folders as videos/<id>/video.<ext>.
+    // They can still be watched; nothing new is added there.
+    match /videos/{id}/{file} {
+      allow get: if true;
+    }
   }
 }
