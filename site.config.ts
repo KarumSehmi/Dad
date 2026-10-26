@@ -13,14 +13,17 @@ export const site = {
 
   // A few words shown under the name. Each string is its own paragraph.
   tribute: [
-    "A place for family and friends to share photos, stories and memories of Harvey.",
+    "A place to celebrate Harvey. Share your favourite photos, stories and the times he made you laugh.",
   ],
 
   // The photo at the top of the page: a file in the public folder, so
-  // public/images/harvey.jpg is "/images/harvey.jpg". Leave empty to show his
-  // initials instead. A signed-in family admin can also pick any shared photo
-  // as the main photo from the site itself, which takes priority over this.
-  portrait: "/images/harvey.jpg",
+  // public/images/harvey-pointing.jpg is "/images/harvey-pointing.jpg". It's
+  // shown square, so keep him near the middle. To change it, add the new
+  // photo under a new file name (resized copies of the old one are kept for
+  // weeks). Leave empty to show his initials instead. A signed-in family
+  // admin can also pick any shared photo as the main photo from the site
+  // itself, which takes priority over this.
+  portrait: "/images/harvey-pointing.jpg",
 
   // How dates are written on the site.
   locale: "en-GB",

@@ -317,7 +317,7 @@ export function ShareForm() {
           name="message"
           rows={7}
           maxLength={LIMITS.message}
-          placeholder={`A memory, a story, or a few words about ${site.firstName}…`}
+          placeholder={`A favourite memory, a funny story, or a few words about ${site.firstName}…`}
           disabled={busy}
         />
       </div>

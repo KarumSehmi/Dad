@@ -5,7 +5,7 @@ import { initials } from "@/lib/format";
 import { site } from "@/site.config";
 
 // Read when the module loads, so the icons can be made once at build time.
-const font = await readFile(join(process.cwd(), "assets/fonts/CormorantGaramond-Medium.woff"));
+const font = await readFile(join(process.cwd(), "assets/fonts/Fraunces-SemiBold.woff"));
 
 /** His initials in the site's serif, used for the browser tab and home-screen icons. */
 export function monogram(size: number, { rounded }: { rounded: boolean }) {
@@ -18,13 +18,13 @@ export function monogram(size: number, { rounded }: { rounded: boolean }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f6f1e9",
+          background: "#b9381f",
           borderRadius: rounded ? size * 0.22 : 0,
-          color: "#7a5c33",
-          fontFamily: "Cormorant",
-          fontSize: size * 0.52,
-          letterSpacing: size * 0.01,
-          paddingBottom: size * 0.04,
+          color: "#fff4e6",
+          fontFamily: "Fraunces",
+          fontSize: size * 0.44,
+          letterSpacing: -size * 0.01,
+          paddingBottom: size * 0.03,
         }}
       >
         {initials(site.name)}
@@ -33,7 +33,7 @@ export function monogram(size: number, { rounded }: { rounded: boolean }) {
     {
       width: size,
       height: size,
-      fonts: [{ name: "Cormorant", data: font, weight: 500, style: "normal" }],
+      fonts: [{ name: "Fraunces", data: font, weight: 600, style: "normal" }],
     },
   );
 }

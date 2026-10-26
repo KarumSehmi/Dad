@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Fraunces, Inter } from "next/font/google";
 import { LightboxProvider } from "@/components/Lightbox";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { getSettings } from "@/lib/data";
@@ -7,10 +7,12 @@ import { optimizedImageUrl } from "@/lib/format";
 import { site } from "@/site.config";
 import "./globals.css";
 
-const display = Cormorant_Garamond({
+// A warm, slightly playful serif for headings (its "soft" setting is turned
+// up in globals.css).
+const display = Fraunces({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
   style: ["normal", "italic"],
+  axes: ["SOFT", "WONK", "opsz"],
   variable: "--font-display",
 });
 
@@ -27,7 +29,7 @@ async function previewImage(): Promise<NonNullable<Metadata["openGraph"]>["image
     return [{ url: optimized(portrait.url), width, height: Math.round((width * portrait.height) / portrait.width), alt: site.name }];
   }
   if (site.portrait) return [{ url: optimized(site.portrait), alt: site.name }];
-  return [{ url: "/og", width: 1200, height: 630, alt: `In loving memory of ${site.name}` }];
+  return [{ url: "/og", width: 1200, height: 630, alt: `Celebrating ${site.name}` }];
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,10 +37,10 @@ export async function generateMetadata(): Promise<Metadata> {
     // Full web address used in link previews. Without SITE_URL, Vercel's
     // production domain is used.
     metadataBase: process.env.SITE_URL ? new URL(process.env.SITE_URL) : undefined,
-    title: { default: `${site.name} · In loving memory`, template: `%s · ${site.name}` },
+    title: { default: `Celebrating ${site.name}`, template: `%s · ${site.name}` },
     description: site.tribute[0],
     openGraph: {
-      title: `In loving memory of ${site.name}`,
+      title: `Celebrating ${site.name}`,
       description: site.tribute[0],
       type: "website",
       images: await previewImage(),

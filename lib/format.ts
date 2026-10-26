@@ -17,8 +17,9 @@ export function initials(name: string): string {
   return picked.map((word) => Array.from(word)[0]?.toUpperCase() ?? "").join("");
 }
 
-// Soft, warm tones for the initials beside each memory.
-const AVATAR_COLORS = ["#b9826a", "#8e9c7a", "#7f93a6", "#b08f5a", "#a3798f", "#6f9a95", "#9d8873"];
+// Bright, cheerful colours for the initials beside each memory (each dark
+// enough for white letters).
+const AVATAR_COLORS = ["#c2410c", "#7b4fa0", "#3f78c0", "#b03a6a", "#2b8a7e", "#5f8a2f", "#a3651a"];
 
 export function avatarColor(name: string): string {
   let hash = 0;

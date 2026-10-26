@@ -28,10 +28,16 @@ Edit [`site.config.ts`](site.config.ts) to change:
   including the Punjabi family titles his children use (e.g. Mamaji for his
   wife's brother). Anything not on this list is ignored.
 
-The photo at the top of the home page is `public/images/harvey.jpg` (set by
-`portrait` in `site.config.ts`). A family admin can also swap it from the site
-itself: sign in at `/admin`, open any shared photo, and press **Use as main
-photo**.
+The photo at the top of the home page, shown square like a polaroid, is
+`public/images/harvey-pointing.jpg` (set by `portrait` in `site.config.ts`).
+To change it, add the new photo under a new file name, since resized copies
+of the old one are cached for weeks. A family admin can also swap it from the
+site itself: sign in at `/admin`, open any shared photo, and press **Use as
+main photo**.
+
+The look is set by the colours at the top of [`app/globals.css`](app/globals.css)
+(a warm red-orange and marigold) and the Fraunces font in
+[`app/layout.tsx`](app/layout.tsx).
 
 ## Putting it online (Vercel)
 

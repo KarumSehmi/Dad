@@ -18,23 +18,28 @@ export function Hero({
   return (
     <section className="hero">
       <div className="container hero-inner">
-        <div className="hero-portrait">
-          {portrait ? (
-            <Image
-              src={portrait.url}
-              alt={site.name}
-              fill
-              sizes="(max-width: 640px) 220px, 280px"
-              preload
-              style={{ backgroundColor: portrait.color }}
-            />
-          ) : (
-            <span className="hero-initials" aria-hidden="true">
-              {initials(site.name)}
-            </span>
-          )}
+        {/* A snapshot, pinned up like a polaroid. */}
+        <div className="hero-photo">
+          <div className="polaroid">
+            <div className="polaroid-picture">
+              {portrait ? (
+                <Image
+                  src={portrait.url}
+                  alt={site.name}
+                  fill
+                  sizes="(max-width: 640px) 70vw, 340px"
+                  preload
+                  style={{ backgroundColor: portrait.color }}
+                />
+              ) : (
+                <span className="hero-initials" aria-hidden="true">
+                  {initials(site.name)}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
-        <p className="eyebrow">In loving memory</p>
+        <p className="eyebrow">Celebrating the life of</p>
         <h1 className="hero-name">{site.name}</h1>
         {dates && <p className="hero-dates">{dates}</p>}
         <div className="hero-tribute">

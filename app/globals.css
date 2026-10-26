@@ -10,10 +10,13 @@
   --ink-3: #6e6357;
   --line: #e5dccf;
   --line-strong: #d2c6b5;
-  --accent: #7a5c33;
-  --accent-soft: #f0e6d5;
-  --danger: #a13e2d;
-  --danger-soft: #f7e5df;
+  /* A warm red-orange for buttons and links, and marigold for decoration. */
+  --accent: #b9381f;
+  --accent-hover: #9c2d17;
+  --accent-soft: #fbe6da;
+  --marigold: #f2a93b;
+  --danger: #a3213a;
+  --danger-soft: #fbe3e7;
   --radius: 18px;
   --shadow: 0 1px 2px rgb(60 42 20 / 4%), 0 10px 30px rgb(60 42 20 / 6%);
   --header-h: 64px;
@@ -49,6 +52,8 @@ body {
   font-family: var(--sans);
   font-size: 16px;
   line-height: 1.6;
+  /* Rounds off the display font (Fraunces); other fonts ignore it. */
+  font-variation-settings: "SOFT" 100;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -354,12 +359,12 @@ code {
 }
 
 .btn-primary {
-  background: var(--ink);
-  color: var(--surface);
+  background: var(--accent);
+  color: #fff;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #43392f;
+  background: var(--accent-hover);
 }
 
 .btn-secondary {
@@ -494,9 +499,13 @@ code {
    Hero
    --------------------------------------------------------------------------- */
 .hero {
-  padding: 52px 0 28px;
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, #fdf9f3 0%, rgb(253 249 243 / 0%) 100%);
+  padding: 56px 0 28px;
+  /* A warm glow behind the photo. */
+  background:
+    radial-gradient(ellipse 55% 42% at 50% 30%, rgb(242 169 59 / 22%) 0%, rgb(242 169 59 / 0%) 70%),
+    radial-gradient(ellipse 80% 60% at 50% 0%, #fdf9f3 0%, rgb(253 249 243 / 0%) 100%);
   text-align: center;
+  overflow: hidden;
 }
 
 .hero-inner {
@@ -505,26 +514,61 @@ code {
   align-items: center;
 }
 
-.hero-portrait {
+.hero-photo {
+  width: clamp(230px, 70vw, 340px);
+  margin-bottom: 40px;
+}
+
+/* A white-bordered print, a little crooked, held on with a strip of tape. */
+.polaroid {
+  position: relative;
+  padding: 12px 12px 46px;
+  background: #fff;
+  border-radius: 3px;
+  box-shadow:
+    0 1px 2px rgb(60 30 10 / 10%),
+    0 20px 44px rgb(60 30 10 / 20%);
+  transform: rotate(-2.5deg);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.polaroid::before {
+  content: "";
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  z-index: 1;
+  width: 104px;
+  height: 30px;
+  background: rgb(242 169 59 / 72%);
+  box-shadow: 0 1px 2px rgb(60 30 10 / 12%);
+  transform: translateX(-50%) rotate(4deg);
+}
+
+@media (hover: hover) {
+  .polaroid:hover {
+    transform: rotate(0deg) scale(1.02);
+  }
+}
+
+.polaroid-picture {
   position: relative;
   display: grid;
   place-items: center;
-  width: clamp(180px, 48vw, 260px);
-  aspect-ratio: 4 / 5;
-  margin-bottom: 34px;
+  aspect-ratio: 1;
   overflow: hidden;
-  border-radius: 999px 999px 20px 20px;
   background: linear-gradient(180deg, #f3e9da 0%, #e9dcc8 100%);
-  box-shadow:
-    0 0 0 1px var(--line),
-    0 0 0 9px var(--surface),
-    0 0 0 10px var(--line-strong),
-    0 24px 48px rgb(60 42 20 / 14%);
 }
 
-.hero-portrait img {
+.polaroid-picture img {
   object-fit: cover;
   object-position: center 30%;
+}
+
+@media (max-width: 640px) {
+  .polaroid {
+    padding: 10px 10px 38px;
+  }
 }
 
 .hero-initials {
@@ -546,7 +590,8 @@ code {
 
 .hero-name {
   font-size: clamp(2.8rem, 10vw, 4.8rem);
-  letter-spacing: -0.005em;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 .hero-dates {
@@ -584,7 +629,7 @@ code {
   animation: rise 0.9s 0.15s ease both;
 }
 
-.hero-inner > .hero-portrait {
+.hero-inner > .hero-photo {
   animation-delay: 0s;
 }
 
@@ -617,12 +662,13 @@ code {
 .ornament::after {
   content: "";
   flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--line-strong));
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgb(242 169 59 / 0%), var(--marigold));
 }
 
 .ornament::after {
-  background: linear-gradient(90deg, var(--line-strong), transparent);
+  background: linear-gradient(90deg, var(--marigold), rgb(242 169 59 / 0%));
 }
 
 /* ---------------------------------------------------------------------------

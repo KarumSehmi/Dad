@@ -27,7 +27,7 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="container site-footer-inner">
-        <p>In loving memory of {site.name}</p>
+        <p>With love, for {site.firstName}</p>
         {/* The admin page is at /admin; there's deliberately no link to it for visitors. */}
         <AdminFooterLink />
       </div>

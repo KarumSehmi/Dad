@@ -15,7 +15,7 @@ export function InviteButton() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `In loving memory of ${site.name}`,
+          title: `Celebrating ${site.name}`,
           text: `A page where family and friends are sharing photos and memories of ${site.firstName}.`,
           url,
         });
