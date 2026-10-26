@@ -23,6 +23,9 @@ Edit [`site.config.ts`](site.config.ts) to change:
 - `born` and `died`, shown under the name, e.g. `"1952"` and `"2026"`
 - `tribute`, the few words under the name (one string per paragraph)
 - `timeZone`, used to date each memory
+- `relationships`, the choices people pick from for "How you knew Harvey",
+  including the Punjabi family titles his children use (e.g. Mamaji for his
+  wife's brother). Anything not on this list is ignored.
 
 The photo at the top of the home page is `public/images/harvey.jpg` (set by
 `portrait` in `site.config.ts`). A family admin can also swap it from the site

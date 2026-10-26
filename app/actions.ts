@@ -26,6 +26,7 @@ import {
 } from "@/lib/storage";
 import type { ActionResult, Memory, Photo } from "@/lib/types";
 import { cleanText, isHexColor, LIMITS } from "@/lib/validate";
+import { isListedRelationship } from "@/site.config";
 
 export type NewMemoryInput = {
   name: string;
@@ -55,7 +56,9 @@ export async function createMemory(input: NewMemoryInput): Promise<ActionResult<
   if (input.website) return { ok: true, id: "" };
 
   const name = cleanText(input.name, LIMITS.name);
-  const relationship = cleanText(input.relationship, LIMITS.relationship);
+  // Only the choices offered on the form are kept.
+  const listed = cleanText(input.relationship, LIMITS.relationship);
+  const relationship = isListedRelationship(listed) ? listed : "";
   const message = cleanText(input.message, LIMITS.message, { multiline: true });
   if (!name) return { ok: false, error: "Please add your name." };
 

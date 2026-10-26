@@ -31,6 +31,65 @@ export const site = {
   allowSearchEngines: false,
 };
 
+// The choices for "How you knew Harvey" on the share form. Family titles are
+// the ones his children use (so Mamaji is his wife's brother), and the text
+// after each title is a hint shown only in the list. Only the title appears
+// on the site. Edit, reorder or add to these freely; the form only accepts
+// what's listed here.
+type Relationship = string | [title: string, hint: string];
+
+export const relationships: { group: string; options: Relationship[] }[] = [
+  {
+    group: "Close family",
+    options: ["Wife", "Son", "Daughter", "Son-in-law", "Daughter-in-law", "Grandchild"],
+  },
+  {
+    group: "His parents",
+    options: [
+      ["Dadaji", "his father"],
+      ["Dadima", "his mother"],
+    ],
+  },
+  {
+    group: "His brothers and sisters",
+    options: [
+      ["Tayaji", "his older brother"],
+      ["Taiji", "Tayaji's wife"],
+      ["Chachaji", "his younger brother"],
+      ["Chachiji", "Chachaji's wife"],
+      ["Bhuaji", "his sister"],
+      ["Phupharji", "Bhuaji's husband"],
+    ],
+  },
+  {
+    group: "His wife's family",
+    options: [
+      ["Nanaji", "his wife's father"],
+      ["Nanima", "his wife's mother"],
+      ["Mamaji", "his wife's brother"],
+      ["Mamiji", "Mamaji's wife"],
+      ["Masiji", "his wife's sister"],
+      ["Masaji", "Masiji's husband"],
+    ],
+  },
+  {
+    group: "Wider family",
+    options: ["Cousin", "Niece", "Nephew", "Other family"],
+  },
+  {
+    group: "Friends and others",
+    options: ["Friend", "Childhood friend", "Family friend", "Colleague", "Neighbour", "Other"],
+  },
+];
+
+export function relationshipTitle(option: Relationship): string {
+  return typeof option === "string" ? option : option[0];
+}
+
+export function isListedRelationship(title: string): boolean {
+  return relationships.some((group) => group.options.some((option) => relationshipTitle(option) === title));
+}
+
 export function lifeDates(): string {
   if (site.born && site.died) return `${site.born} – ${site.died}`;
   return site.born || site.died;

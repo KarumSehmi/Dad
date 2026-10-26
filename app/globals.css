@@ -863,6 +863,7 @@ code {
 }
 
 input:not([type="file"]),
+select,
 textarea {
   width: 100%;
   padding: 12px 14px;
@@ -882,6 +883,7 @@ textarea::placeholder {
 }
 
 input:focus,
+select:focus,
 textarea:focus {
   border-color: var(--accent);
   outline: none;
@@ -889,8 +891,27 @@ textarea:focus {
 }
 
 input:disabled,
+select:disabled,
 textarea:disabled {
   opacity: 0.7;
+}
+
+select {
+  padding-right: 42px;
+  background: #fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236e6357' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 14px center;
+  appearance: none;
+  cursor: pointer;
+}
+
+/* Grey "Choose one" until something is picked. */
+select:has(option[value=""]:checked) {
+  color: #8c8070;
+}
+
+select option {
+  color: var(--ink);
 }
 
 textarea {

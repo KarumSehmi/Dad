@@ -6,7 +6,7 @@ import { createMemory, type NewMemoryInput } from "@/app/actions";
 import { friendlyPhotoError, preparePhoto, type PreparedPhoto } from "@/lib/prepare-photo";
 import type { Photo } from "@/lib/types";
 import { LIMITS } from "@/lib/validate";
-import { site } from "@/site.config";
+import { relationships, relationshipTitle, site } from "@/site.config";
 import { CloseIcon, PhotoIcon } from "./icons";
 import { THANKS_KEY } from "./ThankYouToast";
 
@@ -235,13 +235,21 @@ export function ShareForm() {
         <label htmlFor="relationship">
           How you knew {site.firstName} <span className="optional">(optional)</span>
         </label>
-        <input
-          id="relationship"
-          name="relationship"
-          maxLength={LIMITS.relationship}
-          placeholder="e.g. Nephew, school friend"
-          disabled={busy}
-        />
+        <select id="relationship" name="relationship" defaultValue="" disabled={busy}>
+          <option value="">Choose one</option>
+          {relationships.map(({ group, options }) => (
+            <optgroup key={group} label={group}>
+              {options.map((option) => {
+                const title = relationshipTitle(option);
+                return (
+                  <option key={title} value={title}>
+                    {typeof option === "string" ? title : `${title} – ${option[1]}`}
+                  </option>
+                );
+              })}
+            </optgroup>
+          ))}
+        </select>
       </div>
 
       <div className="field">
