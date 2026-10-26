@@ -9,7 +9,7 @@ export const site = {
   // Optional. Shown under the name, e.g. born: "1952", died: "2026"
   // (or full dates such as "3 March 1952"). Leave empty to hide.
   born: "1975",
-  died: "",
+  died: "2026",
 
   // A few words shown under the name. Each string is its own paragraph.
   tribute: [
