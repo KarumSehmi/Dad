@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Hero } from "@/components/Hero";
-import { FlameIcon } from "@/components/icons";
 import { InviteButton } from "@/components/InviteButton";
 import { MemoryCard } from "@/components/MemoryCard";
 import { PhotoGrid } from "@/components/PhotoGrid";
@@ -45,7 +44,6 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="empty">
-            <FlameIcon width={26} height={26} />
             <p>Nothing has been shared yet.</p>
             <p>
               Be the first to share a photo or a few words about {site.firstName}.

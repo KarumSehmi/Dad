@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { site } from "@/site.config";
-import { CloseIcon, FlameIcon } from "./icons";
+import { CloseIcon } from "./icons";
 
 /** Set by the share form just before it brings the sharer back to the home page. */
 export const THANKS_KEY = "memorial:thanks";
@@ -51,7 +51,6 @@ export function ThankYouToast() {
 
   return (
     <div className="toast" role="status">
-      <FlameIcon width={18} height={18} />
       <span>
         Thank you, {firstName}. Your memory of {site.firstName} is now on the page.
       </span>

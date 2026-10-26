@@ -63,10 +63,3 @@ export const PhotoIcon = (p: SVGProps<SVGSVGElement>) => (
     <path d="M21 16l-5-5-8 8" />
   </Icon>
 );
-
-/** The flame from the site icon, filled rather than outlined. */
-export const FlameIcon = (p: SVGProps<SVGSVGElement>) => (
-  <svg width="20" height="20" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true" focusable="false" {...p}>
-    <path d="M32 9c1.6 7.5-6.5 11-6.5 19.5a6.5 6.5 0 0 0 13 0c0-3.2-1.6-5.4-2.7-7.6 5.4 2.2 10.2 8.1 10.2 16.7A14 14 0 0 1 32 51.6a14 14 0 0 1-14-14C18 24.8 29.8 18.5 32 9z" />
-  </svg>
-);

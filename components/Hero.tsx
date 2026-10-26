@@ -3,7 +3,6 @@ import Link from "next/link";
 import { count, initials } from "@/lib/format";
 import type { Photo } from "@/lib/types";
 import { lifeDates, site } from "@/site.config";
-import { FlameIcon } from "./icons";
 
 export function Hero({
   portrait,
@@ -56,7 +55,7 @@ export function Hero({
           </p>
         )}
         <div className="ornament" aria-hidden="true">
-          <FlameIcon width={18} height={18} />
+          <span>{initials(site.name)}</span>
         </div>
       </div>
     </section>

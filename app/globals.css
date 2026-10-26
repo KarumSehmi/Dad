@@ -241,13 +241,7 @@ code {
   text-align: center;
 }
 
-.empty > svg:first-child {
-  margin-bottom: 4px;
-  color: var(--accent);
-}
-
-.empty > :first-child,
-.empty > svg + p {
+.empty > :first-child {
   color: var(--ink);
   font-family: var(--serif);
   font-size: 1.6rem;
@@ -287,17 +281,13 @@ code {
   gap: 10px;
   width: max-content;
   max-width: calc(100vw - 32px);
-  padding: 12px 8px 12px 20px;
+  padding: 12px 8px 12px 22px;
   background: var(--ink);
   border-radius: 16px;
   box-shadow: 0 14px 36px rgb(30 24 18 / 28%);
   color: var(--surface);
   transform: translateX(-50%);
   animation: toast-in 0.45s ease both;
-}
-
-.toast svg {
-  flex: none;
 }
 
 .toast button {
@@ -483,17 +473,10 @@ code {
 }
 
 .site-footer p {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   color: var(--ink-2);
   font-family: var(--serif);
   font-size: 1.15rem;
   font-style: italic;
-}
-
-.site-footer p svg {
-  color: var(--accent);
 }
 
 .footer-link {
@@ -614,10 +597,19 @@ code {
 .ornament {
   display: flex;
   align-items: center;
-  gap: 14px;
-  width: min(280px, 70%);
+  gap: 16px;
+  width: min(300px, 76%);
   margin-top: 36px;
   color: var(--accent);
+}
+
+/* His initials, spaced out: "H S". */
+.ornament span {
+  padding-left: 0.32em;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: 0.32em;
 }
 
 .ornament::before,
