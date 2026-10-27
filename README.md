@@ -5,7 +5,7 @@ Harvey, read what others have written, and leave their own memories.
 
 - **Home page**: a portrait, a few words about Harvey, recent photos, and every
   memory people have shared. Anyone can react to a memory with an emoji
-  (❤️ 😂 🥰 🔥 🥂), and tap it again to take it back.
+  (❤️ 😂 🥰 🔥 🥂 ♥️ 🤣 🙏 🥹), and tap it again to take it back.
 - **Photos**: every shared photo and video in one gallery. Tap any photo to see
   it full screen, swipe through, or download it; tap a video to play it.
 - **Share a memory**: anyone with the link can add their name, a message, and

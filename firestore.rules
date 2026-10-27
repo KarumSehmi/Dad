@@ -6,7 +6,7 @@ service cloud.firestore {
     // memory, holding a count for each emoji. Anyone can see the counts, and
     // each change may only move one emoji's count up or down by one.
     function emojis() {
-      return ['love', 'laugh', 'aww', 'legend', 'cheers'];
+      return ['love', 'laugh', 'aww', 'legend', 'cheers', 'heart', 'rofl', 'pray', 'touched'];
     }
 
     function onlyEmojiCounts(data) {
@@ -29,7 +29,8 @@ service cloud.firestore {
         && request.resource.data[request.resource.data.keys()[0]] == 1;
       allow update: if onlyEmojiCounts(request.resource.data)
         && request.resource.data.diff(resource.data).affectedKeys().size() == 1
-        && stepOk('love') && stepOk('laugh') && stepOk('aww') && stepOk('legend') && stepOk('cheers');
+        && stepOk('love') && stepOk('laugh') && stepOk('aww') && stepOk('legend') && stepOk('cheers')
+        && stepOk('heart') && stepOk('rofl') && stepOk('pray') && stepOk('touched');
     }
   }
 }

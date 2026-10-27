@@ -16,12 +16,17 @@
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 
+// Every key here must also be listed in firestore.rules, or taps on it are refused.
 export const EMOJIS = [
   { key: "love", emoji: "❤️", label: "Love" },
   { key: "laugh", emoji: "😂", label: "Made me laugh" },
   { key: "aww", emoji: "🥰", label: "Aww" },
   { key: "legend", emoji: "🔥", label: "Legend" },
   { key: "cheers", emoji: "🥂", label: "Cheers" },
+  { key: "heart", emoji: "♥️", label: "Heart" },
+  { key: "rofl", emoji: "🤣", label: "Rolling with laughter" },
+  { key: "pray", emoji: "🙏", label: "Bless" },
+  { key: "touched", emoji: "🥹", label: "Touched" },
 ] as const;
 
 export type EmojiKey = (typeof EMOJIS)[number]["key"];
