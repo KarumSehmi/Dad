@@ -3,7 +3,6 @@ import { avatarColor, formatDate, initials } from "@/lib/format";
 import type { Memory } from "@/lib/types";
 import { AdminMemoryActions } from "./AdminMemoryActions";
 import { PhotoGrid } from "./PhotoGrid";
-import { Reactions } from "./Reactions";
 
 export function MemoryCard({ memory }: { memory: Memory }) {
   const photos = galleryPhotos([memory]);
@@ -35,8 +34,6 @@ export function MemoryCard({ memory }: { memory: Memory }) {
       {photos.length > 0 && (
         <PhotoGrid photos={photos} variant="memory" max={6} />
       )}
-
-      <Reactions memoryId={memory.id} />
 
       <AdminMemoryActions memoryId={memory.id} name={memory.name} />
     </article>

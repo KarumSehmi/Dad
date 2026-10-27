@@ -16,13 +16,6 @@ features, setup and the storage layout.
   (`lib/video.ts`), and they're off unless `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
   is set. `storage.rules` is what's published in Firebase; keep it in step
   with `LIMITS.videoBytes`.
-- Emoji reactions also skip Vercel: the browser reads and bumps counts in
-  Firestore over REST (`lib/reactions.ts`, rules in `firestore.rules`), and
-  they're off unless `NEXT_PUBLIC_FIREBASE_PROJECT_ID` and
-  `NEXT_PUBLIC_FIREBASE_API_KEY` are set. Never store reactions in Blob: every
-  tap would cost Blob operations and a page rebuild. Publish rule changes with
-  `firebase deploy --only storage,firestore:rules` (`.firebaserc` names the
-  project).
 - Keep the Vercel Hobby limits in mind (README, "Free plan limits"): avoid
   extra Blob `list`/`put` calls, and keep image widths limited in
   `next.config.ts`.

@@ -890,59 +890,6 @@ code {
   margin-top: 18px;
 }
 
-/* Emoji reactions under each memory. */
-.reactions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 16px;
-}
-
-.reaction {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 44px;
-  min-height: 38px;
-  padding: 4px 12px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--ink-2);
-  font-size: 0.88rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-  transition:
-    background-color 0.15s,
-    border-color 0.15s;
-}
-
-.reaction:hover {
-  border-color: var(--line-strong);
-}
-
-.reaction[aria-pressed="true"] {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent-hover);
-}
-
-.reaction-emoji {
-  font-size: 1.15rem;
-  line-height: 1;
-}
-
-.reaction[data-pop] .reaction-emoji {
-  animation: reaction-pop 0.4s ease;
-}
-
-@keyframes reaction-pop {
-  40% {
-    transform: scale(1.45);
-  }
-}
-
 .admin-actions {
   display: flex;
   flex-wrap: wrap;
