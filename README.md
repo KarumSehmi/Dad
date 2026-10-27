@@ -4,7 +4,8 @@ A memorial website where family and friends can share photos and videos of
 Harvey, read what others have written, and leave their own memories.
 
 - **Home page**: a portrait, a few words about Harvey, recent photos, and every
-  memory people have shared.
+  memory people have shared. Anyone can react to a memory with an emoji
+  (❤️ 😂 🥰 🔥 🥂), and tap it again to take it back.
 - **Photos**: every shared photo and video in one gallery. Tap any photo to see
   it full screen, swipe through, or download it; tap a video to play it.
 - **Share a memory**: anyone with the link can add their name, a message, and
@@ -74,6 +75,24 @@ Storage bucket instead. Until one is connected, the site takes photos only.
    `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` with the bucket name shown on the
    **Files** tab (e.g. `harvey-sehmi.firebasestorage.app`), then redeploy.
 
+### Emoji reactions (Firestore)
+
+Reactions are tapped often, so they're counted in the same Firebase project's
+Firestore database rather than in Vercel Blob (where every tap would use up
+the free plan's operations). Until it's connected, memories show no reaction
+buttons.
+
+1. In the Firebase console, open **Firestore Database**, click **Create
+   database**, and pick a US location (e.g. `us-east1`) and production mode.
+2. On its **Rules** tab, replace the rules with the contents of
+   [`firestore.rules`](firestore.rules) and click **Publish**. Anyone can see
+   the counts; each tap can only move one emoji's count up or down by one.
+   (Or, with the Firebase CLI: `firebase deploy --only firestore:rules`.)
+3. In **Project settings**, add a web app, and copy its `projectId` and
+   `apiKey` (these are public, not secrets).
+4. In Vercel, add `NEXT_PUBLIC_FIREBASE_PROJECT_ID` and
+   `NEXT_PUBLIC_FIREBASE_API_KEY` with those values, then redeploy.
+
 ### Free plan limits
 
 Vercel's free (Hobby) plan includes, each month, 1 GB of Blob storage
@@ -91,7 +110,9 @@ Videos don't count towards any of this. Firebase's no-cost allowance (for the
 US locations above) is 5 GB of videos stored and 100 GB of watching each month.
 Past that it costs a couple of pence per GB stored and around ten pence per GB
 watched, and the budget alert lets you know. Each video's still image is
-stored with the photos.
+stored with the photos. Reactions use Firestore's free daily allowance (50,000
+reads and 20,000 writes): each visit to the home page reads one count per
+memory, and each tap is one write.
 
 ## Looking after the site
 
@@ -151,6 +172,10 @@ saved in a local `.data` folder instead.
   for it in galleries, and [`lib/video-location.ts`](lib/video-location.ts)
   blanks the location in its metadata. When the memory is saved, the server
   checks with Firebase that each video really arrived.
+- [`components/Reactions.tsx`](components/Reactions.tsx) and
+  [`lib/reactions.ts`](lib/reactions.ts) show and send emoji reactions. Counts
+  live in Firestore at `reactions/<memory id>`; which emojis you've tapped is
+  remembered on your device, so a second tap takes yours back.
 
 Optional environment variables:
 
@@ -163,3 +188,7 @@ Optional environment variables:
   videos to a local
   [Firebase emulator](https://firebase.google.com/docs/emulator-suite) instead,
   for testing. Run it with `storage.rules` and any bucket name.
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID` and `NEXT_PUBLIC_FIREBASE_API_KEY` turn on
+  emoji reactions (see above).
+- `NEXT_PUBLIC_FIRESTORE_EMULATOR_HOST` (e.g. `127.0.0.1:8080`) sends reactions
+  to a local Firestore emulator instead, run with `firestore.rules`.
