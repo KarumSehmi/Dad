@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Emoji reactions on memories (see lib/reactions.ts): one document per
+    // memory, holding a count for each emoji. Anyone can see the counts, and
+    // each change may only move one emoji's count up or down by one.
+    function emojis() {
+      return ['love', 'laugh', 'aww', 'legend', 'cheers', 'heart', 'rofl', 'pray', 'touched'];
+    }
+
+    function onlyEmojiCounts(data) {
+      return data.keys().hasOnly(emojis());
+    }
+
+    // This emoji's count is unchanged, or one more, or one less (not below 0).
+    function stepOk(key) {
+      let before = resource.data.get(key, 0);
+      let after = request.resource.data.get(key, 0);
+      return after == before
+        || (after is int && (after == before + 1 || (after == before - 1 && after >= 0)));
+    }
+
+    match /reactions/{memoryId} {
+      allow read: if true;
+      allow create: if memoryId.matches('[A-Za-z0-9_-]{1,40}')
+        && onlyEmojiCounts(request.resource.data)
+        && request.resource.data.size() == 1
+        && request.resource.data[request.resource.data.keys()[0]] == 1;
+      allow update: if onlyEmojiCounts(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().size() == 1
+        && stepOk('love') && stepOk('laugh') && stepOk('aww') && stepOk('legend') && stepOk('cheers')
+        && stepOk('heart') && stepOk('rofl') && stepOk('pray') && stepOk('touched');
+    }
+  }
+}
