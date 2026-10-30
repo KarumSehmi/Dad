@@ -259,9 +259,9 @@ export async function deletePhotoFiles(photos: Photo[]): Promise<void> {
   await forgetResizedCopies(photos);
 }
 
-// Vercel's CDN keeps the resized copies of each photo that app/img makes, for
-// up to a year. This removes them too, so a deleted photo is really gone.
-// Outside Vercel (e.g. npm run dev) there's nothing to remove and it does nothing.
+// Vercel keeps the resized copies of each photo that app/img makes, in its CDN
+// and its Runtime Cache, for up to a year. Deleting by tag clears both, so a
+// deleted photo is really gone. Outside Vercel (e.g. npm run dev) it does nothing.
 async function forgetResizedCopies(photos: Photo[]) {
   if (photos.length === 0) return;
   try {
