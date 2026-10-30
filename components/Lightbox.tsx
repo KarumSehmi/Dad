@@ -7,6 +7,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useTransition,
@@ -59,6 +60,8 @@ function Lightbox({
   const isAdmin = useIsAdmin();
   const photo = photos[index];
   const many = photos.length > 1;
+  // Room for captions is kept under every photo when any of them has one.
+  const hasCaptions = photos.some((p) => p.caption);
 
   const go = useCallback(
     (delta: number) => onShow((index + delta + photos.length) % photos.length),
@@ -90,7 +93,13 @@ function Lightbox({
   const close = () => dialog.current?.close();
 
   return (
-    <dialog ref={dialog} className="lightbox" aria-label="Photo viewer" onClose={onClose}>
+    <dialog
+      ref={dialog}
+      className="lightbox"
+      aria-label="Photo viewer"
+      data-captions={hasCaptions || undefined}
+      onClose={onClose}
+    >
       <div className="lb-bar">
         <span className="lb-count">{many ? `${index + 1} of ${photos.length}` : ""}</span>
         <div className="lb-tools">
@@ -179,15 +188,65 @@ function Lightbox({
       </div>
 
       <div className="lb-caption">
-        {photo.caption && <p className="lb-caption-text">{photo.caption}</p>}
-        <p className="lb-meta">
-          Shared by {photo.sharedBy} · {formatDate(photo.sharedAt)} ·{" "}
-          <Link href={`/#m-${photo.memoryId}`} onClick={close}>
-            See their memory
-          </Link>
-        </p>
+        <LightboxCaption key={photo.id} photo={photo} onSeeMemory={close} />
       </div>
     </dialog>
+  );
+}
+
+/**
+ * The words under a photo. Their space is the same height for every photo (two
+ * lines of caption, then who shared it), so the photo and the arrows stay in
+ * the same place from one photo to the next. A caption too long for two lines
+ * shows its first line and "Read more", which opens it over the photo.
+ */
+function LightboxCaption({ photo, onSeeMemory }: { photo: GalleryPhoto; onSeeMemory: () => void }) {
+  const measure = useRef<HTMLParagraphElement>(null);
+  const [tooLong, setTooLong] = useState(false);
+  const [open, setOpen] = useState(false);
+  const { caption } = photo;
+
+  // Before the caption is first drawn, and whenever the screen changes width.
+  useLayoutEffect(() => {
+    const el = measure.current;
+    if (!el) return;
+    const check = () => setTooLong(el.scrollHeight > el.clientHeight + 1);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const lines = open ? "" : tooLong ? " lb-lines-1" : " lb-lines-2";
+  return (
+    <div className="lb-caption-inner" data-open={open || undefined}>
+      {caption && (
+        <>
+          {/* Unseen, held to two lines, to tell whether the caption fits. */}
+          <p ref={measure} className="lb-caption-text lb-lines-2 lb-caption-measure" aria-hidden="true">
+            {caption}
+          </p>
+          <p className={`lb-caption-text${lines}`}>{caption}</p>
+          {tooLong && (
+            <button type="button" className="lb-more" aria-expanded={open} onClick={() => setOpen(!open)}>
+              {open ? "Show less" : "Read more"}
+            </button>
+          )}
+        </>
+      )}
+      <p className="lb-meta">
+        <span className="lb-meta-who">Shared by {photo.sharedBy}</span>
+        <span className="lb-meta-sep" aria-hidden="true">
+          ·
+        </span>
+        <span className="lb-meta-when">
+          {formatDate(photo.sharedAt)} ·{" "}
+          <Link href={`/#m-${photo.memoryId}`} onClick={onSeeMemory}>
+            See their memory
+          </Link>
+        </span>
+      </p>
+    </div>
   );
 }
 
