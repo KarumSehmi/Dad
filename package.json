@@ -12,10 +12,12 @@
     "@firebase/app": "^0.16.4",
     "@firebase/storage": "^0.14.5",
     "@vercel/blob": "^2.8.2",
+    "@vercel/functions": "^3.10.1",
     "next": "16.4.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/node": "^20",

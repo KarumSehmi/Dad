@@ -179,7 +179,7 @@ export async function deletePhoto(memoryId: string, photoId: string): Promise<Ac
         await deleteMemoryAndPhotos(memory);
       } else {
         await saveMemory({ ...memory, photos, rev: memory.rev + 1 });
-        await deletePhotoFiles([photo.url]);
+        await deletePhotoFiles([photo]);
       }
       await clearPortraitIf([photo.url]);
     }
