@@ -84,9 +84,13 @@ these: pages are cached, and each photo is shown at the size each screen needs.
 
 The site resizes photos itself ([`app/img`](app/img/[width]/[...path]/route.ts))
 rather than through Vercel's image optimizer, whose free plan stops after 5,000
-resized copies a month and then leaves photos blank. Each copy is made once, the
-first time someone needs it, and Vercel's CDN keeps it for a year, so a photo's
-original is only downloaded from Blob storage when a new copy is made.
+resized copies a month and then leaves photos blank. Each copy is made the first
+time someone needs it, then kept by Vercel's CDN and in its Runtime Cache (free
+plan: 1M reads and 200K writes a month, measured in 8 KB units). The CDN starts
+afresh with every deployment but the Runtime Cache doesn't, so a photo's
+original is downloaded from Blob storage about once per size, not after every
+deploy. If the Runtime Cache allowance runs out, copies are simply made again
+from the originals until the month resets.
 
 On the free plan, going over a Blob limit pauses storage until the 30-day
 period resets, and Vercel emails a warning before that happens. If the site is
@@ -151,8 +155,8 @@ saved in a local `.data` folder instead.
   the full-screen viewer.
 - Photos are shown at a few fixed widths ([`lib/image-url.ts`](lib/image-url.ts)),
   made by [`app/img/[width]/[...path]/route.ts`](app/img/[width]/[...path]/route.ts)
-  with [sharp](https://sharp.pixelplumbing.com) and kept by Vercel's CDN.
-  Deleting a photo removes its copies too.
+  with [sharp](https://sharp.pixelplumbing.com) and kept by Vercel's CDN and
+  Runtime Cache. Deleting a photo removes its copies too.
 - Videos go straight from the browser to Firebase Storage
   ([`lib/upload-video.ts`](lib/upload-video.ts)), as
   `video-<id>.<ext>`. Before that, [`lib/prepare-video.ts`](lib/prepare-video.ts)
