@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useSyncExternalStore } from "react";
 import { avatarColor, initials, joinList, mediaCounts } from "@/lib/format";
 import type { Person } from "@/lib/types";
@@ -50,9 +49,10 @@ function markSeen(person: Person) {
 }
 
 /**
- * A face for everyone who has shared, newest first, like the stories along the
- * top of Instagram. Tapping one shows all their photos full screen. A coloured
- * ring means there's something this visitor hasn't looked at yet.
+ * Everyone who has shared, newest first, as their initials (like the memory
+ * cards), in the manner of the stories along the top of Instagram. Tapping one
+ * shows all their photos full screen. A coloured ring means there's something
+ * this visitor hasn't looked at yet.
  */
 export function PeopleRow({ people }: { people: Person[] }) {
   const open = useLightbox();
@@ -62,27 +62,20 @@ export function PeopleRow({ people }: { people: Person[] }) {
   return (
     <ul className="people">
       {people.map((person) => {
-        const cover = person.photos[0];
         const isSeen = seen[person.key] === person.memoryId;
         const face = (
           <>
             <span className="person-ring">
-              {cover ? (
-                <span className="person-photo">
-                  <Image src={cover.url} alt="" fill sizes="80px" style={{ backgroundColor: cover.color }} />
-                </span>
-              ) : (
-                <span className="person-photo person-initials" style={{ backgroundColor: avatarColor(person.name) }}>
-                  {initials(person.name)}
-                </span>
-              )}
+              <span className="person-initials" style={{ backgroundColor: avatarColor(person.name) }}>
+                {initials(person.name)}
+              </span>
             </span>
             <span className="person-name">{person.name}</span>
           </>
         );
         return (
           <li key={person.key} className="person" data-seen={isSeen || undefined}>
-            {cover ? (
+            {person.photos.length > 0 ? (
               <button
                 type="button"
                 className="person-button"

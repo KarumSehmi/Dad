@@ -834,7 +834,7 @@ code {
 }
 
 /* ---------------------------------------------------------------------------
-   People: a face for everyone who has shared (PeopleRow.tsx). It scrolls
+   People: everyone who has shared, as initials (PeopleRow.tsx). It scrolls
    sideways on a phone and wraps onto more lines on a bigger screen.
    --------------------------------------------------------------------------- */
 .people {
@@ -878,26 +878,18 @@ code {
   background: var(--line-strong);
 }
 
-.person-photo {
-  position: relative;
+/* Their initials on their own colour, as on the memory cards. */
+.person-initials {
   display: grid;
   place-items: center;
   width: 72px;
   height: 72px;
-  overflow: hidden;
   border: 3px solid var(--bg);
   border-radius: 50%;
-  background: var(--bg-deep);
-}
-
-.person-photo img {
-  object-fit: cover;
-  object-position: center 30%;
-}
-
-.person-initials {
   color: #fff;
+  font-size: 1.45rem;
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .person-name {
@@ -951,9 +943,10 @@ code {
     scroll-snap-align: start;
   }
 
-  .person-photo {
+  .person-initials {
     width: 64px;
     height: 64px;
+    font-size: 1.3rem;
   }
 }
 
@@ -1072,21 +1065,6 @@ code {
   align-items: center;
   gap: 12px;
   margin-bottom: 14px;
-}
-
-.gallery-person-face {
-  position: relative;
-  flex: none;
-  width: 44px;
-  height: 44px;
-  overflow: hidden;
-  border-radius: 50%;
-  background: var(--bg-deep);
-}
-
-.gallery-person-face img {
-  object-fit: cover;
-  object-position: center 30%;
 }
 
 .gallery-person-who {

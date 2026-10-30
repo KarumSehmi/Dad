@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useMemo } from "react";
-import { joinList, mediaCounts } from "@/lib/format";
+import { avatarColor, initials, joinList, mediaCounts } from "@/lib/format";
 import type { Person } from "@/lib/types";
 import { useLightbox } from "./Lightbox";
 import { PhotoGrid } from "./PhotoGrid";
@@ -28,14 +27,13 @@ export function GalleryByPerson({ people }: { people: Person[] }) {
   return (
     <div className="gallery-people">
       {people.map((person, p) => {
-        const cover = person.photos[0];
         // Someone who wrote but shared no photos isn't part of the gallery.
-        if (!cover) return null;
+        if (person.photos.length === 0) return null;
         return (
           <section key={person.key} className="gallery-person" aria-labelledby={`person-${p}`}>
             <header className="gallery-person-head">
-              <span className="gallery-person-face" aria-hidden="true">
-                <Image src={cover.url} alt="" fill sizes="48px" style={{ backgroundColor: cover.color }} />
+              <span className="avatar" style={{ backgroundColor: avatarColor(person.name) }} aria-hidden="true">
+                {initials(person.name)}
               </span>
               <div className="gallery-person-who">
                 <h2 id={`person-${p}`} className="gallery-person-name">
