@@ -14,7 +14,8 @@ import {
   type ReactNode,
 } from "react";
 import { deletePhoto, setPortrait } from "@/app/actions";
-import { downloadUrl, formatDate, optimizedImageUrl } from "@/lib/format";
+import { downloadUrl, formatDate } from "@/lib/format";
+import { resizedImageUrl } from "@/lib/image-url";
 import type { GalleryPhoto } from "@/lib/types";
 import { useIsAdmin } from "@/lib/use-is-admin";
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, DownloadIcon, StarIcon, TrashIcon } from "./icons";
@@ -207,7 +208,7 @@ function LightboxVideo({ photo }: { photo: GalleryPhoto }) {
     <video
       className="lb-img lb-video"
       src={video.url}
-      poster={optimizedImageUrl(photo.url, 1080)}
+      poster={resizedImageUrl(photo.url, 1080)}
       width={photo.width}
       height={photo.height}
       controls

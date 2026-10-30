@@ -17,6 +17,10 @@ features, setup and the storage layout.
   is set. `storage.rules` is what's published in Firebase; keep it in step
   with `LIMITS.videoBytes`.
 - Keep the Vercel Hobby limits in mind (README, "Free plan limits"): avoid
-  extra Blob `list`/`put` calls, and keep image widths limited in
-  `next.config.ts`.
+  extra Blob `list`/`put` calls, and keep the image widths in
+  `lib/image-url.ts` few.
+- Photos are resized by `app/img/[width]/[...path]/route.ts` (sharp), not
+  Vercel's image optimizer, whose free plan runs out. `next/image` reaches it
+  through the loader in `lib/image-loader.ts`; never switch back to the default
+  loader or add `unoptimized` to a shared photo.
 - Checks: `npx tsc --noEmit`, `npm run lint`, `npm run build`.

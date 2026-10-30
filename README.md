@@ -31,8 +31,8 @@ Edit [`site.config.ts`](site.config.ts) to change:
 The photo at the top of the home page, shown square like a polaroid, is
 `public/images/harvey-pointing.jpg` (set by `portrait` in `site.config.ts`).
 To change it, add the new photo under a new file name, since resized copies
-of the old one are cached for weeks. A family admin can also swap it from the
-site itself: sign in at `/admin`, open any shared photo, and press **Use as
+of the old one are kept for up to a year. A family admin can also swap it from
+the site itself: sign in at `/admin`, open any shared photo, and press **Use as
 main photo**.
 
 The look is set by the colours at the top of [`app/globals.css`](app/globals.css)
@@ -77,11 +77,16 @@ Storage bucket instead. Until one is connected, the site takes photos only.
 ### Free plan limits
 
 Vercel's free (Hobby) plan includes, each month, 1 GB of Blob storage
-(roughly 2,000 photos at the sizes this site uses), 10 GB of Blob downloads,
+(roughly 2,000 photos at the sizes this site uses), 10 GB of Blob downloads and
 2,000 "advanced" Blob operations (each uploaded photo, saved memory, or page
-refresh after a change uses one) and 5,000 image resizes. The site is designed
-to stay well inside these: pages are cached, and photos are shown through
-Vercel's image optimizer at the size each screen needs.
+refresh after a change uses one). The site is designed to stay well inside
+these: pages are cached, and each photo is shown at the size each screen needs.
+
+The site resizes photos itself ([`app/img`](app/img/[width]/[...path]/route.ts))
+rather than through Vercel's image optimizer, whose free plan stops after 5,000
+resized copies a month and then leaves photos blank. Each copy is made once, the
+first time someone needs it, and Vercel's CDN keeps it for a year, so a photo's
+original is only downloaded from Blob storage when a new copy is made.
 
 On the free plan, going over a Blob limit pauses storage until the 30-day
 period resets, and Vercel emails a warning before that happens. If the site is
@@ -144,6 +149,10 @@ saved in a local `.data` folder instead.
 - [`components/PhotoGrid.tsx`](components/PhotoGrid.tsx) lays photos out in
   justified rows, and [`components/Lightbox.tsx`](components/Lightbox.tsx) is
   the full-screen viewer.
+- Photos are shown at a few fixed widths ([`lib/image-url.ts`](lib/image-url.ts)),
+  made by [`app/img/[width]/[...path]/route.ts`](app/img/[width]/[...path]/route.ts)
+  with [sharp](https://sharp.pixelplumbing.com) and kept by Vercel's CDN.
+  Deleting a photo removes its copies too.
 - Videos go straight from the browser to Firebase Storage
   ([`lib/upload-video.ts`](lib/upload-video.ts)), as
   `video-<id>.<ext>`. Before that, [`lib/prepare-video.ts`](lib/prepare-video.ts)

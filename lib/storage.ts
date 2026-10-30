@@ -1,8 +1,10 @@
 import "server-only";
 import { del, list, put } from "@vercel/blob";
+import { dangerouslyDeleteByTag } from "@vercel/functions";
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { Memory, Settings } from "./types";
+import { photoCacheTag } from "./image-url";
+import type { Memory, Photo, Settings } from "./types";
 
 /*
  * Everything is stored as files:
@@ -24,11 +26,21 @@ type Backend = {
   put(pathname: string, body: Buffer | string, contentType: string): Promise<StoredFile>;
   list(prefix: string): Promise<StoredFile[]>;
   read(file: StoredFile): Promise<string>;
+  /** The file's bytes, or null if there's no such file. */
+  readBytes(pathname: string): Promise<Buffer | null>;
   /** Takes URLs as returned by put() and list(). */
   remove(urls: string[]): Promise<void>;
 };
 
 const ONE_YEAR = 60 * 60 * 24 * 365;
+
+// The store's public web address, worked out the way @vercel/blob does it,
+// from the store id inside the read-write token (vercel_blob_rw_<id>_…).
+function blobPublicUrl(pathname: string): string {
+  const storeId = process.env.BLOB_STORE_ID || (process.env.BLOB_READ_WRITE_TOKEN ?? "").split("_")[3];
+  if (!storeId) throw new Error("Can't tell which Blob store to read from.");
+  return `https://${storeId.replace(/^store_/, "").toLowerCase()}.public.blob.vercel-storage.com/${pathname}`;
+}
 
 const blobBackend: Backend = {
   async put(pathname, body, contentType) {
@@ -54,6 +66,12 @@ const blobBackend: Backend = {
     const res = await fetch(file.url);
     if (!res.ok) throw new Error(`Could not read ${file.pathname} (HTTP ${res.status})`);
     return res.text();
+  },
+  async readBytes(pathname) {
+    const res = await fetch(blobPublicUrl(pathname), { signal: AbortSignal.timeout(20_000) });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`Could not read ${pathname} (HTTP ${res.status})`);
+    return Buffer.from(await res.arrayBuffer());
   },
   async remove(urls) {
     if (urls.length > 0) await del(urls);
@@ -100,6 +118,14 @@ const localBackend: Backend = {
   },
   async read(file) {
     return readFile(requireLocalFilePath(file.pathname), "utf8");
+  },
+  async readBytes(pathname) {
+    try {
+      return await readFile(requireLocalFilePath(pathname));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+      throw error;
+    }
   },
   async remove(urls) {
     for (const url of urls) {
@@ -206,18 +232,44 @@ export async function saveMemory(memory: Memory): Promise<void> {
 export async function deleteMemoryAndPhotos(memory: Memory): Promise<void> {
   const files = await memoryFiles(memory.id);
   await backend().remove([...files.map((f) => f.url), ...memory.photos.map((p) => p.url)]);
+  await forgetResizedCopies(memory.photos);
 }
 
 // ---------------------------------------------------------------------------
 // Photos
 
+const PHOTO_ID = /^[\w-]{1,40}$/;
+
+function photoPath(id: string, ext = "jpg"): string {
+  return `photos/${id}/photo.${ext}`;
+}
+
 export async function savePhoto(id: string, body: Buffer, contentType: string, ext: string): Promise<string> {
-  const file = await backend().put(`photos/${id}/photo.${ext}`, body, contentType);
+  const file = await backend().put(photoPath(id, ext), body, contentType);
   return file.url;
 }
 
-export async function deletePhotoFiles(urls: string[]): Promise<void> {
-  await backend().remove(urls);
+/** A shared photo's file, or null if there's no such photo. */
+export async function readPhotoFile(id: string): Promise<Buffer | null> {
+  return PHOTO_ID.test(id) ? backend().readBytes(photoPath(id)) : null;
+}
+
+export async function deletePhotoFiles(photos: Photo[]): Promise<void> {
+  await backend().remove(photos.map((p) => p.url));
+  await forgetResizedCopies(photos);
+}
+
+// Vercel's CDN keeps the resized copies of each photo that app/img makes, for
+// up to a year. This removes them too, so a deleted photo is really gone.
+// Outside Vercel (e.g. npm run dev) there's nothing to remove and it does nothing.
+async function forgetResizedCopies(photos: Photo[]) {
+  if (photos.length === 0) return;
+  try {
+    await dangerouslyDeleteByTag(photos.map((p) => photoCacheTag(p.id)));
+  } catch (cause) {
+    // The photo itself is gone; its copies are at addresses nobody can guess.
+    console.error("Removing resized copies of deleted photos failed", cause);
+  }
 }
 
 // ---------------------------------------------------------------------------

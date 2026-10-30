@@ -55,11 +55,6 @@ export function formatDuration(seconds: number): string {
   return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
 
-/** A resized copy of an image from the site's image optimizer, as next/image would request it. */
-export function optimizedImageUrl(src: string, width: number): string {
-  return `/_next/image?url=${encodeURIComponent(src)}&w=${width}&q=75`;
-}
-
 export function downloadUrl(url: string): string {
   return `${url}${url.includes("?") ? "&" : "?"}download=1`;
 }
