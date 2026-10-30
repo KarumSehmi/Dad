@@ -1,20 +1,29 @@
 import Image from "next/image";
 import Link from "next/link";
-import { count, initials, joinList } from "@/lib/format";
+import { initials } from "@/lib/format";
 import type { Photo } from "@/lib/types";
 import { lifeDates, site } from "@/site.config";
 
 export function Hero({
   portrait,
   memoryCount,
-  mediaCounts,
+  photoCount,
+  videoCount,
 }: {
   portrait?: Pick<Photo, "url" | "color">;
   memoryCount: number;
-  /** e.g. ["12 photos", "2 videos"] */
-  mediaCounts: string[];
+  photoCount: number;
+  videoCount: number;
 }) {
   const dates = lifeDates();
+  // Photos and videos are only counted once there are some.
+  const stats = (
+    [
+      [memoryCount, "memory", "memories"],
+      [photoCount, "photo", "photos"],
+      [videoCount, "video", "videos"],
+    ] as const
+  ).filter(([n], i) => i === 0 || n > 0);
   return (
     <section className="hero">
       <div className="container hero-inner">
@@ -56,9 +65,13 @@ export function Hero({
           </Link>
         </div>
         {memoryCount > 0 && (
-          <p className="hero-stats">
-            {joinList([count(memoryCount, "memory", "memories"), ...mediaCounts])} shared so far
-          </p>
+          <ul className="hero-stats" aria-label="Shared so far">
+            {stats.map(([n, one, many]) => (
+              <li key={many}>
+                <strong>{n.toLocaleString(site.locale)}</strong> {n === 1 ? one : many}
+              </li>
+            ))}
+          </ul>
         )}
         <div className="ornament" aria-hidden="true">
           <span>{initials(site.name)}</span>

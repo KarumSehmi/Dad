@@ -2,33 +2,44 @@ import Link from "next/link";
 import { Hero } from "@/components/Hero";
 import { InviteButton } from "@/components/InviteButton";
 import { MemoryCard } from "@/components/MemoryCard";
-import { PhotoGrid } from "@/components/PhotoGrid";
+import { PeopleRow } from "@/components/PeopleRow";
 import { StorageNotice } from "@/components/StorageNotice";
 import { ThankYouToast } from "@/components/ThankYouToast";
-import { galleryPhotos, getMemories, getSettings } from "@/lib/data";
-import { count, joinList, mediaCounts } from "@/lib/format";
+import { galleryPhotos, getMemories, getSettings, peopleOf } from "@/lib/data";
+import { count } from "@/lib/format";
 import { site } from "@/site.config";
 
 export default async function HomePage() {
   const [memories, settings] = await Promise.all([getMemories(), getSettings()]);
   const photos = galleryPhotos(memories);
-  const hasVideos = photos.some((photo) => photo.video);
+  const videoCount = photos.filter((photo) => photo.video).length;
+  const people = peopleOf(memories);
   const portrait = settings.portrait ?? (site.portrait ? { url: site.portrait, color: "#d9cfc1" } : undefined);
 
   return (
     <>
       <StorageNotice />
-      <Hero portrait={portrait} memoryCount={memories.length} mediaCounts={mediaCounts(photos)} />
+      <Hero
+        portrait={portrait}
+        memoryCount={memories.length}
+        photoCount={photos.length - videoCount}
+        videoCount={videoCount}
+      />
 
-      {photos.length > 0 && (
-        <section className="section container" aria-labelledby="recent-photos">
+      {/* People mostly share photos (about a dozen each), so the way in is
+          by person: tap someone to flick through theirs. */}
+      {people.length > 0 && (
+        <section className="section container" aria-labelledby="people">
           <div className="section-head">
-            <h2 id="recent-photos">{hasVideos ? "Photos and videos" : "Photos"}</h2>
-            <Link href="/photos" className="section-link">
-              {hasVideos ? `See all ${photos.length.toLocaleString(site.locale)}` : `See all ${joinList(mediaCounts(photos))}`}
-            </Link>
+            <h2 id="people">From {count(people.length, "person", "people")}</h2>
+            {photos.length > 0 && (
+              <Link href="/photos" className="section-link">
+                See all {photos.length.toLocaleString(site.locale)}
+              </Link>
+            )}
           </div>
-          <PhotoGrid photos={photos} variant="strip" max={8} />
+          <p className="section-hint">Pick someone to see their photos.</p>
+          <PeopleRow people={people} />
         </section>
       )}
 
