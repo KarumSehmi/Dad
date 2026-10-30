@@ -2,10 +2,9 @@ import Link from "next/link";
 import { Hero } from "@/components/Hero";
 import { InviteButton } from "@/components/InviteButton";
 import { MemoryCard } from "@/components/MemoryCard";
-import { PeopleRow } from "@/components/PeopleRow";
 import { StorageNotice } from "@/components/StorageNotice";
 import { ThankYouToast } from "@/components/ThankYouToast";
-import { galleryPhotos, getMemories, getSettings, peopleOf } from "@/lib/data";
+import { galleryPhotos, getMemories, getSettings } from "@/lib/data";
 import { count } from "@/lib/format";
 import { site } from "@/site.config";
 
@@ -13,7 +12,6 @@ export default async function HomePage() {
   const [memories, settings] = await Promise.all([getMemories(), getSettings()]);
   const photos = galleryPhotos(memories);
   const videoCount = photos.filter((photo) => photo.video).length;
-  const people = peopleOf(memories);
   const portrait = settings.portrait ?? (site.portrait ? { url: site.portrait, color: "#d9cfc1" } : undefined);
 
   return (
@@ -25,23 +23,6 @@ export default async function HomePage() {
         photoCount={photos.length - videoCount}
         videoCount={videoCount}
       />
-
-      {/* People mostly share photos (about a dozen each), so the way in is
-          by person: tap someone to flick through theirs. */}
-      {people.length > 0 && (
-        <section className="section container" aria-labelledby="people">
-          <div className="section-head">
-            <h2 id="people">From {count(people.length, "person", "people")}</h2>
-            {photos.length > 0 && (
-              <Link href="/photos" className="section-link">
-                See all {photos.length.toLocaleString(site.locale)}
-              </Link>
-            )}
-          </div>
-          <p className="section-hint">Pick someone to see their photos.</p>
-          <PeopleRow people={people} />
-        </section>
-      )}
 
       <section className="section container narrow" aria-labelledby="memories">
         <div className="section-head">
