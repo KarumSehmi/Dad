@@ -1385,26 +1385,135 @@ textarea {
   right: 10px;
 }
 
+/* The words under each photo sit in a band that's the same height for every
+   photo, so the photo and the arrows stay put as you go through them. It holds
+   two lines of caption (when any photo being viewed has a caption) and the
+   "Shared by" line. Longer captions are kept to it by Lightbox.tsx. */
+.lightbox {
+  --lb-caption-size: 1.4rem;
+  --lb-caption-line: calc(var(--lb-caption-size) * 1.35);
+  --lb-caption-lines: 0;
+  --lb-meta-line: calc(0.88rem * 1.45);
+  --lb-meta-lines: 1;
+  --lb-bottom: max(18px, env(safe-area-inset-bottom));
+}
+
+.lightbox[data-captions] {
+  --lb-caption-lines: 2;
+}
+
 .lb-caption {
-  display: grid;
-  gap: 4px;
-  width: 100%;
+  position: relative;
+  height: calc(
+    14px + var(--lb-caption-lines) * var(--lb-caption-line) + 4px + var(--lb-meta-lines) * var(--lb-meta-line) +
+      var(--lb-bottom)
+  );
+}
+
+.lb-caption-inner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   max-width: 780px;
-  margin: 0 auto;
-  padding: 14px 20px max(18px, env(safe-area-inset-bottom));
+  margin-inline: auto;
+  padding: 14px 20px var(--lb-bottom);
   text-align: center;
 }
 
+/* A long caption, opened, rises over the photo rather than moving it. */
+.lb-caption-inner[data-open] {
+  max-height: 60dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgb(20 17 14 / 94%);
+  border-radius: 16px 16px 0 0;
+}
+
 .lb-caption-text {
+  max-width: 100%;
   color: #fbf6ee;
   font-family: var(--serif);
-  font-size: 1.4rem;
+  font-size: var(--lb-caption-size);
   line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.lb-lines-1,
+.lb-lines-2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.lb-lines-1 {
+  -webkit-line-clamp: 1;
+}
+
+.lb-lines-2 {
+  -webkit-line-clamp: 2;
+}
+
+.lb-caption-measure {
+  position: absolute;
+  top: 0;
+  right: 20px;
+  left: 20px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.lb-more {
+  position: relative;
+  height: var(--lb-caption-line);
+  padding: 0 4px;
+  background: none;
+  border: 0;
+  color: #ead9b9;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* A bigger area to tap than the words themselves. */
+.lb-more::before {
+  content: "";
+  position: absolute;
+  inset: -8px -16px;
 }
 
 .lb-meta {
+  display: flex;
+  justify-content: center;
+  max-width: 100%;
+  margin-top: 4px;
   color: #b9ae9f;
   font-size: 0.88rem;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+/* A very long name ends in "…" rather than pushing onto another line. */
+.lb-meta-who {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-meta-sep {
+  flex: none;
+  /* About a space either side, matching the "·" before "See their memory". */
+  padding-inline: 0.25em;
+}
+
+.lb-meta-when {
+  flex: none;
 }
 
 .lb-meta a {
@@ -1462,6 +1571,25 @@ textarea {
 
   .lb-next {
     right: 6px;
+  }
+
+  /* Who shared it on one line, when and "See their memory" on the next. */
+  .lightbox {
+    --lb-caption-size: 1.15rem;
+    --lb-meta-lines: 2;
+  }
+
+  .lb-meta {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .lb-meta-who {
+    max-width: 100%;
+  }
+
+  .lb-meta-sep {
+    display: none;
   }
 
   .lb-btn-label {
