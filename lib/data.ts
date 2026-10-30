@@ -1,7 +1,7 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { readAllMemories, readSettings, storageMode } from "./storage";
-import type { GalleryPhoto, Memory, Settings } from "./types";
+import type { GalleryPhoto, Memory, Person, Settings } from "./types";
 
 export const MEMORIES_TAG = "memories";
 export const SETTINGS_TAG = "settings";
@@ -25,6 +25,28 @@ export async function getSettings(): Promise<Settings> {
   cacheTag(SETTINGS_TAG);
   if (storageMode() === "missing") return {};
   return (await readSettings()).settings;
+}
+
+/** The people who have shared memories, most recent first. */
+export function peopleOf(memories: Memory[]): Person[] {
+  const people = new Map<string, Person>();
+  for (const memory of memories) {
+    const key = memory.name.normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
+    const person = people.get(key);
+    if (person) {
+      person.photos.push(...galleryPhotos([memory]));
+      person.relationship ??= memory.relationship;
+    } else {
+      people.set(key, {
+        key,
+        name: memory.name,
+        ...(memory.relationship && { relationship: memory.relationship }),
+        memoryId: memory.id,
+        photos: galleryPhotos([memory]),
+      });
+    }
+  }
+  return [...people.values()];
 }
 
 /** Every photo across all memories, newest first. */

@@ -3,10 +3,13 @@
 A memorial website where family and friends can share photos and videos of
 Harvey, read what others have written, and leave their own memories.
 
-- **Home page**: a portrait, a few words about Harvey, recent photos, and every
-  memory people have shared.
-- **Photos**: every shared photo and video in one gallery. Tap any photo to see
-  it full screen, swipe through, or download it; tap a video to play it.
+- **Home page**: a portrait, a few words about Harvey, a face for everyone who
+  has shared (tap one to flick through their photos), and every memory people
+  have shared, each with its photos as a collage. Very long messages start
+  folded, with "Read more".
+- **Photos**: every shared photo and video, grouped by who shared them. Tap any
+  photo to see it full screen, swipe through them all, or download it; tap a
+  video to play it.
 - **Share a memory**: anyone with the link can add their name, a message, and
   up to 30 photos and videos at a time. No account needed.
 - **Family admin**: signed-in family members can delete memories, photos or
@@ -150,9 +153,12 @@ saved in a local `.data` folder instead.
   can only include photos with a valid receipt.
 - [`components/ShareForm.tsx`](components/ShareForm.tsx) and
   [`lib/prepare-photo.ts`](lib/prepare-photo.ts) prepare photos in the browser.
-- [`components/PhotoGrid.tsx`](components/PhotoGrid.tsx) lays photos out in
-  justified rows, and [`components/Lightbox.tsx`](components/Lightbox.tsx) is
-  the full-screen viewer.
+- [`components/PeopleRow.tsx`](components/PeopleRow.tsx) is the row of faces on
+  the home page; whose photos a visitor has looked at is remembered in their
+  browser only. [`components/PhotoMosaic.tsx`](components/PhotoMosaic.tsx) is a
+  memory's collage, [`components/PhotoGrid.tsx`](components/PhotoGrid.tsx) lays
+  the photos page out in justified rows, and
+  [`components/Lightbox.tsx`](components/Lightbox.tsx) is the full-screen viewer.
 - Photos are shown at a few fixed widths ([`lib/image-url.ts`](lib/image-url.ts)),
   made by [`app/img/[width]/[...path]/route.ts`](app/img/[width]/[...path]/route.ts)
   with [sharp](https://sharp.pixelplumbing.com) and kept by Vercel's CDN and

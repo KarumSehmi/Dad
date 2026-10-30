@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PhotoGrid } from "@/components/PhotoGrid";
-import { galleryPhotos, getMemories } from "@/lib/data";
+import { GalleryByPerson } from "@/components/GalleryByPerson";
+import { galleryPhotos, getMemories, peopleOf } from "@/lib/data";
 import { joinList, mediaCounts } from "@/lib/format";
 import { site } from "@/site.config";
 
@@ -11,7 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default async function PhotosPage() {
-  const photos = galleryPhotos(await getMemories());
+  const memories = await getMemories();
+  const photos = galleryPhotos(memories);
   const hasVideos = photos.some((photo) => photo.video);
 
   return (
@@ -33,7 +34,7 @@ export default async function PhotosPage() {
       </div>
 
       {photos.length > 0 ? (
-        <PhotoGrid photos={photos} />
+        <GalleryByPerson people={peopleOf(memories)} />
       ) : (
         <div className="empty">
           <p>No photos yet.</p>

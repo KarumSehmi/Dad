@@ -44,6 +44,18 @@ export type GalleryPhoto = Photo & {
   sharedAt: string;
 };
 
+/** Everything one person has shared, across all their memories. */
+export type Person = {
+  /** Their name folded, so someone who shares twice counts once. */
+  key: string;
+  name: string;
+  relationship?: string;
+  /** Their newest memory. */
+  memoryId: string;
+  /** Newest first. */
+  photos: GalleryPhoto[];
+};
+
 export type ActionResult<T extends object = object> =
   | ({ ok: true } & T)
   | { ok: false; error: string };

@@ -2,7 +2,8 @@ import { galleryPhotos } from "@/lib/data";
 import { avatarColor, formatDate, initials } from "@/lib/format";
 import type { Memory } from "@/lib/types";
 import { AdminMemoryActions } from "./AdminMemoryActions";
-import { PhotoGrid } from "./PhotoGrid";
+import { MemoryMessage } from "./MemoryMessage";
+import { PhotoMosaic } from "./PhotoMosaic";
 
 export function MemoryCard({ memory }: { memory: Memory }) {
   const photos = galleryPhotos([memory]);
@@ -23,17 +24,9 @@ export function MemoryCard({ memory }: { memory: Memory }) {
         </div>
       </header>
 
-      {paragraphs.length > 0 && (
-        <div className="memory-message">
-          {paragraphs.map((paragraph, i) => (
-            <p key={i}>{paragraph}</p>
-          ))}
-        </div>
-      )}
+      {paragraphs.length > 0 && <MemoryMessage paragraphs={paragraphs} />}
 
-      {photos.length > 0 && (
-        <PhotoGrid photos={photos} variant="memory" max={6} />
-      )}
+      {photos.length > 0 && <PhotoMosaic photos={photos} />}
 
       <AdminMemoryActions memoryId={memory.id} name={memory.name} />
     </article>
