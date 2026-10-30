@@ -3,9 +3,8 @@
 A memorial website where family and friends can share photos and videos of
 Harvey, read what others have written, and leave their own memories.
 
-- **Home page**: a portrait, a few words about Harvey, a circle with the
-  initials of everyone who has shared (tap one to flick through their photos),
-  and every memory people have shared, each with its photos as a collage. Very long messages start
+- **Home page**: a portrait, a few words about Harvey, and every memory people
+  have shared, each with its photos as a collage. Very long messages start
   folded, with "Read more".
 - **Photos**: every shared photo and video, grouped by who shared them. Tap any
   photo to see it full screen, swipe through them all, or download it; tap a
@@ -153,11 +152,9 @@ saved in a local `.data` folder instead.
   can only include photos with a valid receipt.
 - [`components/ShareForm.tsx`](components/ShareForm.tsx) and
   [`lib/prepare-photo.ts`](lib/prepare-photo.ts) prepare photos in the browser.
-- [`components/PeopleRow.tsx`](components/PeopleRow.tsx) is the row of people
-  on the home page; whose photos a visitor has looked at is remembered in their
-  browser only. [`components/PhotoMosaic.tsx`](components/PhotoMosaic.tsx) is a
-  memory's collage, [`components/PhotoGrid.tsx`](components/PhotoGrid.tsx) lays
-  the photos page out in justified rows, and
+- [`components/PhotoMosaic.tsx`](components/PhotoMosaic.tsx) is a memory's
+  collage, [`components/PhotoGrid.tsx`](components/PhotoGrid.tsx) lays the
+  photos page out in justified rows, and
   [`components/Lightbox.tsx`](components/Lightbox.tsx) is the full-screen viewer.
 - Photos are shown at a few fixed widths ([`lib/image-url.ts`](lib/image-url.ts)),
   made by [`app/img/[width]/[...path]/route.ts`](app/img/[width]/[...path]/route.ts)
