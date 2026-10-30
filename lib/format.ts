@@ -12,7 +12,17 @@ export function formatDate(iso: string): string {
 }
 
 export function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
+  // From the first and last words, leaving out anything in brackets (as in
+  // "Rajinder and Satpal Rehal (Leeds)") and anything that isn't a word, such
+  // as "/" or "&".
+  const wordsOf = (text: string) =>
+    text
+      .split(/\s+/)
+      .map((word) => word.replace(/^[^\p{L}\p{N}]+/u, ""))
+      .filter(Boolean);
+  const outsideBrackets = wordsOf(name.replace(/\([^)]*\)|\[[^\]]*\]/g, " "));
+  const words = outsideBrackets.length > 0 ? outsideBrackets : wordsOf(name);
+  if (words.length === 0) return Array.from(name.trim())[0] ?? "";
   const picked = words.length > 1 ? [words[0], words[words.length - 1]] : words;
   return picked.map((word) => Array.from(word)[0]?.toUpperCase() ?? "").join("");
 }
