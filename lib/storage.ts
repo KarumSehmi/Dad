@@ -2,6 +2,17 @@ import "server-only";
 import { del, list, put } from "@vercel/blob";
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  createFile,
+  deleteFiles,
+  FileExistsError,
+  fileExists,
+  firebaseAdminConfigured,
+  listFiles,
+  readFileText,
+} from "./firebase-admin";
+import { firebaseBucket } from "./firebase-storage";
+import { PHOTO_WIDTHS, photoFileName, photoIdOf } from "./image-url";
 import type { Memory, Photo, Settings } from "./types";
 
 /*
@@ -11,17 +22,18 @@ import type { Memory, Photo, Settings } from "./types";
  *   settings/<rev>.json             site settings chosen by an admin
  *
  * Files are never overwritten. Changing a memory writes the next revision and
- * deletes the old one, so cached copies of a URL can never go stale.
+ * deletes the old one, so cached copies can never go stale.
  *
- * On Vercel the files go to Vercel Blob. Locally (no Blob token) they go to
- * the .data folder and are served by app/files/[...path]/route.ts.
+ * On Vercel they're kept in Firebase Storage, next to the photos and videos,
+ * where only the site can reach them (lib/firebase-admin.ts). Locally (no
+ * Firebase key) they go to the .data folder, which app/files/[...path] serves.
  *
- * Photos and videos are kept in Firebase Storage instead (lib/photo-storage.ts),
- * never here: Vercel Blob's free plan blocks the whole store for 30 days once
- * a monthly limit is passed, and photos used it up. Only when running without
- * Firebase (npm run dev) are photos kept in .data, as photos/<photoId>/photo.jpg.
- * Photos shared before the move are still in Vercel Blob at that path, but
- * nothing reads them there: each was copied to Firebase under the same id.
+ * Until November 2026 they were kept in Vercel Blob, along with the photos.
+ * Its free plan blocks the whole store for 30 days once a monthly limit is
+ * passed, which took every photo off the site and stopped anything new being
+ * saved. The first time the site runs with its Firebase key, it copies these
+ * files across (moveFromVercelBlob below) and never uses Vercel Blob again.
+ * Never keep anything there.
  */
 
 type StoredFile = { pathname: string; url: string };
@@ -36,15 +48,38 @@ type Backend = {
   remove(urls: string[]): Promise<void>;
 };
 
-const ONE_YEAR = 60 * 60 * 24 * 365;
+const FIREBASE_URL_PREFIX = `gs://${firebaseBucket}/`;
 
+const firebaseBackend: Backend = {
+  async put(pathname, body, contentType) {
+    await createFile(pathname, body, contentType);
+    return { pathname, url: FIREBASE_URL_PREFIX + pathname };
+  },
+  async list(prefix) {
+    return (await listFiles(prefix)).map((pathname) => ({ pathname, url: FIREBASE_URL_PREFIX + pathname }));
+  },
+  async read(file) {
+    const text = await readFileText(file.pathname);
+    if (text === null) throw new Error(`Could not read ${file.pathname}: it's gone`);
+    return text;
+  },
+  holds(url) {
+    return url.startsWith(FIREBASE_URL_PREFIX);
+  },
+  async remove(urls) {
+    await deleteFiles(urls.map((url) => url.slice(FIREBASE_URL_PREFIX.length)));
+  },
+};
+
+// Only used to read what was kept in Vercel Blob before the move to Firebase,
+// or by a deployment without its Firebase key yet.
 const blobBackend: Backend = {
   async put(pathname, body, contentType) {
     const blob = await put(pathname, body, {
       access: "public",
       contentType,
       addRandomSuffix: false,
-      cacheControlMaxAge: ONE_YEAR,
+      cacheControlMaxAge: 60 * 60 * 24 * 365,
     });
     return { pathname: blob.pathname, url: blob.url };
   },
@@ -123,9 +158,10 @@ const localBackend: Backend = {
   },
 };
 
-export type StorageMode = "blob" | "local" | "missing";
+export type StorageMode = "firebase" | "blob" | "local" | "missing";
 
 export function storageMode(): StorageMode {
+  if (firebaseAdminConfigured()) return "firebase";
   if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) return "blob";
   // Vercel's filesystem is read-only, so local storage can't work there.
   if (process.env.VERCEL) return "missing";
@@ -134,13 +170,59 @@ export function storageMode(): StorageMode {
 
 export class StorageNotConfiguredError extends Error {
   constructor() {
-    super("Storage is not connected. Connect a Vercel Blob store to this project.");
+    super("Storage is not connected. Set up Firebase as the README describes.");
   }
 }
 
-function backend(): Backend {
+// ---------------------------------------------------------------------------
+// The one-time move from Vercel Blob
+
+/** Left in Firebase once everything has been copied across. */
+const MOVED_NOTE = "moved-from-vercel-blob.json";
+
+let moving: Promise<void> | null = null;
+
+/**
+ * Copies every memory and settings file from Vercel Blob into Firebase,
+ * keeping their names, unless that's been done already. Several copies of the
+ * site may do this at once (e.g. while a deployment is built); files are
+ * never replaced, so that's harmless.
+ */
+function moveFromVercelBlob(): Promise<void> {
+  moving ??= (async () => {
+    if (!process.env.BLOB_READ_WRITE_TOKEN || (await fileExists(MOVED_NOTE))) return;
+    const files = [...(await blobBackend.list("memories/")), ...(await blobBackend.list("settings/"))];
+    for (let i = 0; i < files.length; i += 8) {
+      await Promise.all(
+        files.slice(i, i + 8).map(async (file) => {
+          try {
+            await createFile(file.pathname, await blobBackend.read(file), "application/json");
+          } catch (error) {
+            if (!(error instanceof FileExistsError)) throw error;
+          }
+        }),
+      );
+    }
+    try {
+      await createFile(MOVED_NOTE, JSON.stringify({ movedAt: new Date().toISOString(), files: files.length }), "application/json");
+    } catch (error) {
+      if (!(error instanceof FileExistsError)) throw error;
+    }
+    console.log(`Copied ${files.length} files from Vercel Blob to Firebase`);
+  })().catch((error) => {
+    moving = null; // Try again next time.
+    throw error;
+  });
+  return moving;
+}
+
+async function store(): Promise<Backend> {
   const mode = storageMode();
   if (mode === "missing") throw new StorageNotConfiguredError();
+  if (mode === "firebase") {
+    await moveFromVercelBlob();
+    return firebaseBackend;
+  }
   return mode === "blob" ? blobBackend : localBackend;
 }
 
@@ -164,9 +246,9 @@ function latestRevision(files: StoredFile[]) {
 }
 
 async function writeRevision(folder: string, rev: number, data: unknown, previous: StoredFile[]) {
-  const store = backend();
-  await store.put(revPath(folder, rev), JSON.stringify(data), "application/json");
-  await store.remove(previous.map((f) => f.url));
+  const files = await store();
+  await files.put(revPath(folder, rev), JSON.stringify(data), "application/json");
+  await files.remove(previous.map((f) => f.url));
 }
 
 // ---------------------------------------------------------------------------
@@ -185,16 +267,16 @@ function parseMemory(json: string): Memory | null {
 }
 
 export async function readAllMemories(): Promise<Memory[]> {
-  const store = backend();
+  const files = await store();
   const byId = new Map<string, StoredFile[]>();
-  for (const file of await store.list("memories/")) {
+  for (const file of await files.list("memories/")) {
     const id = file.pathname.match(MEMORY_FILE)?.[1];
     if (id) byId.set(id, [...(byId.get(id) ?? []), file]);
   }
   const memories = await Promise.all(
-    [...byId.values()].map(async (files) => {
-      const { latest } = latestRevision(files);
-      return latest ? parseMemory(await store.read(latest)) : null;
+    [...byId.values()].map(async (revisions) => {
+      const { latest } = latestRevision(revisions);
+      return latest ? parseMemory(await files.read(latest)) : null;
     }),
   );
   return memories
@@ -203,13 +285,13 @@ export async function readAllMemories(): Promise<Memory[]> {
 }
 
 async function memoryFiles(id: string): Promise<StoredFile[]> {
-  return backend().list(`memories/${id}/`);
+  return (await store()).list(`memories/${id}/`);
 }
 
 export async function readMemory(id: string): Promise<Memory | null> {
   if (!/^[\w-]{1,40}$/.test(id)) return null;
   const { latest } = latestRevision(await memoryFiles(id));
-  return latest ? parseMemory(await backend().read(latest)) : null;
+  return latest ? parseMemory(await (await store()).read(latest)) : null;
 }
 
 export async function saveMemory(memory: Memory): Promise<void> {
@@ -219,7 +301,7 @@ export async function saveMemory(memory: Memory): Promise<void> {
 
 export async function deleteMemoryAndPhotos(memory: Memory): Promise<void> {
   const files = await memoryFiles(memory.id);
-  await backend().remove(files.map((f) => f.url));
+  await (await store()).remove(files.map((f) => f.url));
   await deletePhotoFiles(memory.photos);
 }
 
@@ -249,33 +331,42 @@ export async function readLocalPhoto(id: string): Promise<Buffer | null> {
   }
 }
 
+/** The names of a photo's files in Firebase Storage: as shared, every width, and the video if it's one. */
+function firebaseFilesOf(photo: Photo): string[] {
+  const names: string[] = [];
+  const id = photoIdOf(photo.url);
+  if (id) names.push(photoFileName(id), ...PHOTO_WIDTHS.map((width) => photoFileName(id, width)));
+  const video = photo.video?.url.match(/\/o\/([^?]+)/)?.[1];
+  if (video) names.push(decodeURIComponent(video));
+  return names;
+}
+
 /**
- * Removes the photos' files that are kept here: the old copies in Vercel Blob
- * of photos shared before the move to Firebase, or photos in .data. Files in
- * Firebase Storage stay, because storage.rules lets nobody delete them (see
- * "Looking after the site" in the README). With the photo gone from its
- * memory, the site no longer shows or links to them.
+ * Removes the photos' files for good: from Firebase Storage, and from .data
+ * when running locally. (The copies left in Vercel Blob from before the move
+ * stay there; nothing uses or links to them.)
  */
 export async function deletePhotoFiles(photos: Photo[]): Promise<void> {
-  const store = backend();
-  await store.remove(photos.map((p) => p.url).filter((url) => store.holds(url)));
+  const mode = storageMode();
+  if (mode === "firebase") await deleteFiles(photos.flatMap(firebaseFilesOf));
+  else if (mode === "local") await localBackend.remove(photos.map((p) => p.url).filter((url) => localBackend.holds(url)));
 }
 
 // ---------------------------------------------------------------------------
 // Settings
 
 export async function readSettings(): Promise<{ settings: Settings; rev: number }> {
-  const store = backend();
-  const { latest } = latestRevision(await store.list("settings/"));
+  const files = await store();
+  const { latest } = latestRevision(await files.list("settings/"));
   if (!latest) return { settings: {}, rev: 0 };
   try {
-    return { settings: JSON.parse(await store.read(latest)) as Settings, rev: revOf(latest) };
+    return { settings: JSON.parse(await files.read(latest)) as Settings, rev: revOf(latest) };
   } catch {
     return { settings: {}, rev: revOf(latest) };
   }
 }
 
 export async function saveSettings(settings: Settings, rev: number): Promise<void> {
-  const existing = await backend().list("settings/");
+  const existing = await (await store()).list("settings/");
   await writeRevision("settings/", rev, settings, existing);
 }
