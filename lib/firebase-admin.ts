@@ -143,13 +143,6 @@ export async function readFileText(name: string): Promise<string | null> {
   return res.text();
 }
 
-export async function fileExists(name: string): Promise<boolean> {
-  const res = await call(`${object(name)}?fields=name`);
-  if (res.status === 404) return false;
-  if (!res.ok) throw await failure(res, `look up ${name}`);
-  return true;
-}
-
 /** Deletes the files, skipping any that are already gone. */
 export async function deleteFiles(names: string[]): Promise<void> {
   for (let i = 0; i < names.length; i += 8) {

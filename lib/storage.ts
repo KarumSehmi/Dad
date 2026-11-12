@@ -6,7 +6,6 @@ import {
   createFile,
   deleteFiles,
   FileExistsError,
-  fileExists,
   firebaseAdminConfigured,
   listFiles,
   readFileText,
@@ -175,44 +174,81 @@ export class StorageNotConfiguredError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// The one-time move from Vercel Blob
+// The move from Vercel Blob
 
-/** Left in Firebase once everything has been copied across. */
+/** Left in Firebase once everything has been copied across, with the time. */
 const MOVED_NOTE = "moved-from-vercel-blob.json";
+/** An empty file here for each file copied, so each is copied only once, ever. */
+const COPIED = "moved-from-vercel-blob/";
+/** How long after the move to keep picking up what the previous deployment saved in Vercel Blob. */
+const CATCH_UP_FOR = 24 * 60 * 60 * 1000;
+
+/** Creates a file unless there's one already. */
+async function createUnlessThere(name: string, body: string, contentType: string): Promise<boolean> {
+  try {
+    await createFile(name, body, contentType);
+    return true;
+  } catch (error) {
+    if (error instanceof FileExistsError) return false;
+    throw error;
+  }
+}
 
 let moving: Promise<void> | null = null;
+let lastChecked = 0;
 
 /**
- * Copies every memory and settings file from Vercel Blob into Firebase,
- * keeping their names, unless that's been done already. Several copies of the
- * site may do this at once (e.g. while a deployment is built); files are
- * never replaced, so that's harmless.
+ * Copies the memory and settings files from Vercel Blob into Firebase,
+ * keeping their names. The first time, it copies everything and leaves a note
+ * with the time. For a day after that, while Vercel Blob can still be read,
+ * it also copies anything new there (saved by the previous deployment while
+ * the new one went live), so nothing shared during the switch is lost. Each
+ * file is copied only once, so nothing deleted since comes back. Then it
+ * never looks at Vercel Blob again.
+ *
+ * Several copies of the site may do this at once (e.g. while a deployment is
+ * built); files are never replaced, so that's harmless.
  */
 function moveFromVercelBlob(): Promise<void> {
-  moving ??= (async () => {
-    if (!process.env.BLOB_READ_WRITE_TOKEN || (await fileExists(MOVED_NOTE))) return;
-    const files = [...(await blobBackend.list("memories/")), ...(await blobBackend.list("settings/"))];
-    for (let i = 0; i < files.length; i += 8) {
+  if (moving) return moving;
+  if (Date.now() - lastChecked < 5 * 60_000) return Promise.resolve();
+  moving = (async () => {
+    if (!process.env.BLOB_READ_WRITE_TOKEN) return;
+    const note = await readFileText(MOVED_NOTE);
+    const movedAt = note ? Date.parse((JSON.parse(note) as { movedAt: string }).movedAt) : null;
+    if (movedAt !== null && Date.now() - movedAt > CATCH_UP_FOR) return;
+
+    const startedAt = new Date().toISOString();
+    let files: StoredFile[];
+    try {
+      files = [...(await blobBackend.list("memories/")), ...(await blobBackend.list("settings/"))];
+    } catch (error) {
+      // Without a first copy the site has no words, so don't carry on.
+      if (movedAt === null) throw error;
+      console.error("Checking Vercel Blob for anything new since the move failed", error);
+      return;
+    }
+    const copiedBefore = new Set((await listFiles(COPIED)).map((name) => name.slice(COPIED.length)));
+    const wanted = files.filter((file) => !copiedBefore.has(file.pathname));
+    for (let i = 0; i < wanted.length; i += 8) {
       await Promise.all(
-        files.slice(i, i + 8).map(async (file) => {
-          try {
-            await createFile(file.pathname, await blobBackend.read(file), "application/json");
-          } catch (error) {
-            if (!(error instanceof FileExistsError)) throw error;
-          }
+        wanted.slice(i, i + 8).map(async (file) => {
+          await createUnlessThere(file.pathname, await blobBackend.read(file), "application/json");
+          await createUnlessThere(COPIED + file.pathname, "", "text/plain");
         }),
       );
     }
-    try {
-      await createFile(MOVED_NOTE, JSON.stringify({ movedAt: new Date().toISOString(), files: files.length }), "application/json");
-    } catch (error) {
-      if (!(error instanceof FileExistsError)) throw error;
+    if (movedAt === null) {
+      await createUnlessThere(MOVED_NOTE, JSON.stringify({ movedAt: startedAt, files: files.length }), "application/json");
     }
-    console.log(`Copied ${files.length} files from Vercel Blob to Firebase`);
-  })().catch((error) => {
-    moving = null; // Try again next time.
-    throw error;
-  });
+    if (wanted.length > 0) console.log(`Copied ${wanted.length} files from Vercel Blob to Firebase`);
+  })()
+    .then(() => {
+      lastChecked = Date.now();
+    })
+    .finally(() => {
+      moving = null;
+    });
   return moving;
 }
 
