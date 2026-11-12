@@ -104,8 +104,9 @@ free plan Vercel blocks the whole store for 30 days when that happens: every
 photo went blank, and nothing new could be saved. Everything has been in
 Firebase since. Nothing must go back to Vercel Blob or be served through
 Vercel. The first time the site ran with its Firebase key it copied the words
-across (`moveFromVercelBlob` in [`lib/storage.ts`](lib/storage.ts)); the old
-Blob store isn't used any more and can be deleted.
+across, and for a day after that anything the old version had saved meanwhile
+(`moveFromVercelBlob` in [`lib/storage.ts`](lib/storage.ts)). Since then the
+old Blob store isn't used, and it can be deleted.
 
 ## Looking after the site
 
