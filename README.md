@@ -44,7 +44,8 @@ The look is set by the colours at the top of [`app/globals.css`](app/globals.css
 ## Putting it online (Vercel)
 
 The site is built to run on [Vercel](https://vercel.com)'s free plan, with
-photos and messages kept in Vercel Blob storage.
+the messages kept in Vercel Blob storage and the photos and videos in Firebase
+Storage (below).
 
 1. In Vercel, **Add New → Project** and import this GitHub repository. Vercel
    deploys it automatically, and again every time the main branch changes.
@@ -56,10 +57,11 @@ photos and messages kept in Vercel Blob storage.
 
 Until storage is connected, the site shows a notice and nothing can be shared.
 
-### Videos (Firebase Storage)
+### Photos and videos (Firebase Storage)
 
-Videos are too big for Vercel Blob's free plan, so they're kept in a Firebase
-Storage bucket instead. Until one is connected, the site takes photos only.
+Photos and videos are kept in a Firebase Storage bucket, and visitors' phones
+and computers load them straight from there. Until one is connected, the site
+shows a notice and only words can be shared.
 
 1. At [console.firebase.google.com](https://console.firebase.google.com),
    create a project. Analytics isn't needed.
@@ -70,39 +72,36 @@ Storage bucket instead. Until one is connected, the site takes photos only.
    locations (US-CENTRAL1, US-EAST1 or US-WEST1) and production mode.
 4. On the **Rules** tab, replace the rules with the contents of
    [`storage.rules`](storage.rules) and click **Publish**. They let anyone
-   watch the videos and add new ones (up to 500 MB, video files only), but not
-   list, replace or delete them.
+   see the photos and videos and add new ones (photos up to 5 MB, videos up to
+   500 MB), but not list, replace or delete them. Publish them again whenever
+   `storage.rules` changes.
 5. In Vercel, add the environment variable
    `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` with the bucket name shown on the
    **Files** tab (e.g. `harvey-sehmi.firebasestorage.app`), then redeploy.
 
 ### Free plan limits
 
-Vercel's free (Hobby) plan includes, each month, 1 GB of Blob storage
-(roughly 2,000 photos at the sizes this site uses), 10 GB of Blob downloads and
-2,000 "advanced" Blob operations (each uploaded photo, saved memory, or page
-refresh after a change uses one). The site is designed to stay well inside
-these: pages are cached, and each photo is shown at the size each screen needs.
+The site is built so that no free allowance running out can take the photos
+and videos off it.
 
-The site resizes photos itself ([`app/img`](app/img/[width]/[...path]/route.ts))
-rather than through Vercel's image optimizer, whose free plan stops after 5,000
-resized copies a month and then leaves photos blank. Each copy is made the first
-time someone needs it, then kept by Vercel's CDN and in its Runtime Cache (free
-plan: 1M reads and 200K writes a month, measured in 8 KB units). The CDN starts
-afresh with every deployment but the Runtime Cache doesn't, so a photo's
-original is downloaded from Blob storage about once per size, not after every
-deploy. If the Runtime Cache allowance runs out, copies are simply made again
-from the originals until the month resets.
+- **Vercel** (free Hobby plan) only serves the pages and keeps the messages.
+  That's a small part of each monthly allowance: 1 GB of Blob storage, 2,000
+  "advanced" Blob operations (each saved memory or page refresh after a change
+  uses one or two), 10 GB of Blob downloads, and 100 GB of page downloads.
+  Going over a Blob limit blocks the store for 30 days; the pages would still
+  show, but nothing new could be shared until it resets.
+- **Firebase** holds the photos and videos. Its no-cost allowance (for the US
+  locations above) is 5 GB stored and 100 GB of downloads each month. Each
+  photo takes 1 to 2 MB with its copies, and the videos shared so far about
+  800 MB. Past the allowance it costs a couple of pence per GB stored and
+  around ten pence per GB downloaded, and the budget alert lets you know. It
+  never blocks anything.
 
-On the free plan, going over a Blob limit pauses storage until the 30-day
-period resets, and Vercel emails a warning before that happens. If the site is
-shared very widely, the Pro plan removes the hard limits.
-
-Videos don't count towards any of this. Firebase's no-cost allowance (for the
-US locations above) is 5 GB of videos stored and 100 GB of watching each month.
-Past that it costs a couple of pence per GB stored and around ten pence per GB
-watched, and the budget alert lets you know. Each video's still image is
-stored with the photos.
+Until November 2026 photos were kept in Vercel Blob and resized on Vercel. A
+busy week used up the Blob allowance, Vercel blocked the store, and every photo
+went blank for a week. Photos have been in Firebase since, and must never go
+back to Vercel Blob or be served through Vercel. The old copies are still in
+the Blob store's `photos/` folder; nothing uses them, and they can be deleted.
 
 ## Looking after the site
 
@@ -117,10 +116,13 @@ across it; bookmark it. While signed in on that device you'll see:
 
 Changing `ADMIN_PASSWORD` signs everyone out.
 
-Deleting a video takes it off the site, but the site can't remove the file
-from Firebase (its rules don't allow deleting). If a video must be gone for
-good, delete its file (named `video-` plus a long code, shown at the end of
-the video's web address) in the Firebase console's Storage page.
+Deleting a photo or video takes it off the site, but the site can't remove its
+files from Firebase (its rules don't allow deleting), so anyone who already
+has a file's exact web address can still open it. If a photo or video must be
+gone for good, delete its files in the Firebase console's Storage page. A
+video is one file, `video-` plus a long code, shown at the end of the video's
+web address. A photo is eight: `photo-` plus the code shown at the end of its
+Download link, followed by `.jpg` or by a width and `.jpg`.
 
 Everything shared is visible to anyone with the link, and search engines are
 asked not to list the site. Set `allowSearchEngines: true` in `site.config.ts`
@@ -135,21 +137,26 @@ npm install
 ADMIN_PASSWORD=choose-one npm run dev
 ```
 
-Then open http://localhost:3000. Without a Blob token, photos and memories are
-saved in a local `.data` folder instead.
+Then open http://localhost:3000. Without a Blob token or a Firebase bucket,
+photos and memories are saved in a local `.data` folder instead.
 
 ## How it works
 
 - [Next.js 16](https://nextjs.org) with Cache Components. Pages are
   prerendered and only rebuilt when something is shared, deleted, or changed
   (`updateTag` in [`app/actions.ts`](app/actions.ts)), plus a daily refresh.
-- [Vercel Blob](https://vercel.com/docs/vercel-blob) holds everything as
-  files: `photos/<id>/photo.jpg`, one JSON file per memory in
-  `memories/<id>/`, and admin settings in `settings/`. See
-  [`lib/storage.ts`](lib/storage.ts).
-- Uploads go through [`app/api/photos/route.ts`](app/api/photos/route.ts),
-  which checks each file is a real JPEG and returns a signed receipt; a memory
-  can only include photos with a valid receipt.
+- [Vercel Blob](https://vercel.com/docs/vercel-blob) holds the words as
+  files: one JSON file per memory in `memories/<id>/`, and admin settings in
+  `settings/`. See [`lib/storage.ts`](lib/storage.ts).
+- [Firebase Storage](https://firebase.google.com/docs/storage) holds the
+  photos and videos, all at the top of the bucket: `photo-<id>.jpg` as shared,
+  `photo-<id>.<width>.jpg` for each width the site shows, and
+  `video-<id>.<ext>`. See [`lib/firebase-storage.ts`](lib/firebase-storage.ts).
+- Photo uploads go through [`app/api/photos/route.ts`](app/api/photos/route.ts),
+  which checks each file is a real JPEG, makes a copy at every width the site
+  shows with [sharp](https://sharp.pixelplumbing.com), stores them all in
+  Firebase ([`lib/photo-storage.ts`](lib/photo-storage.ts)) and returns a
+  signed receipt; a memory can only include photos with a valid receipt.
 - [`components/ShareForm.tsx`](components/ShareForm.tsx) and
   [`lib/prepare-photo.ts`](lib/prepare-photo.ts) prepare photos in the browser.
 - [`components/PhotoMosaic.tsx`](components/PhotoMosaic.tsx) is a memory's
@@ -157,9 +164,9 @@ saved in a local `.data` folder instead.
   photos page out in justified rows, and
   [`components/Lightbox.tsx`](components/Lightbox.tsx) is the full-screen viewer.
 - Photos are shown at a few fixed widths ([`lib/image-url.ts`](lib/image-url.ts)),
-  made by [`app/img/[width]/[...path]/route.ts`](app/img/[width]/[...path]/route.ts)
-  with [sharp](https://sharp.pixelplumbing.com) and kept by Vercel's CDN and
-  Runtime Cache. Deleting a photo removes its copies too.
+  loaded straight from Firebase, so they never use Vercel's allowances. Only
+  the photos in `public/images` are resized on Vercel, by
+  [`app/img/[width]/[...path]/route.ts`](app/img/[width]/[...path]/route.ts).
 - Videos go straight from the browser to Firebase Storage
   ([`lib/upload-video.ts`](lib/upload-video.ts)), as
   `video-<id>.<ext>`. Before that, [`lib/prepare-video.ts`](lib/prepare-video.ts)
@@ -174,8 +181,7 @@ Optional environment variables:
   for link previews. Defaults to Vercel's production domain.
 - `SESSION_SECRET` (any long random string) signs photo receipts. It isn't
   needed on Vercel, where the Blob token is used.
-- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` turns on videos (see above).
 - `NEXT_PUBLIC_FIREBASE_STORAGE_EMULATOR_HOST` (e.g. `127.0.0.1:9199`) sends
-  videos to a local
+  photos and videos to a local
   [Firebase emulator](https://firebase.google.com/docs/emulator-suite) instead,
   for testing. Run it with `storage.rules` and any bucket name.

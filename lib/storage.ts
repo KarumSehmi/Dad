@@ -1,15 +1,12 @@
 import "server-only";
 import { del, list, put } from "@vercel/blob";
-import { dangerouslyDeleteByTag } from "@vercel/functions";
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { photoCacheTag } from "./image-url";
 import type { Memory, Photo, Settings } from "./types";
 
 /*
- * Everything is stored as files:
+ * The memories' words and the site settings are stored as small files:
  *
- *   photos/<photoId>/photo.jpg      the uploaded (already resized) photo
  *   memories/<memoryId>/<rev>.json  one memory: name, message, photo list
  *   settings/<rev>.json             site settings chosen by an admin
  *
@@ -18,6 +15,13 @@ import type { Memory, Photo, Settings } from "./types";
  *
  * On Vercel the files go to Vercel Blob. Locally (no Blob token) they go to
  * the .data folder and are served by app/files/[...path]/route.ts.
+ *
+ * Photos and videos are kept in Firebase Storage instead (lib/photo-storage.ts),
+ * never here: Vercel Blob's free plan blocks the whole store for 30 days once
+ * a monthly limit is passed, and photos used it up. Only when running without
+ * Firebase (npm run dev) are photos kept in .data, as photos/<photoId>/photo.jpg.
+ * Photos shared before the move are still in Vercel Blob at that path, but
+ * nothing reads them there: each was copied to Firebase under the same id.
  */
 
 type StoredFile = { pathname: string; url: string };
@@ -26,21 +30,13 @@ type Backend = {
   put(pathname: string, body: Buffer | string, contentType: string): Promise<StoredFile>;
   list(prefix: string): Promise<StoredFile[]>;
   read(file: StoredFile): Promise<string>;
-  /** The file's bytes, or null if there's no such file. */
-  readBytes(pathname: string): Promise<Buffer | null>;
+  /** Whether `url` is the address of a file kept here (as returned by put() and list()). */
+  holds(url: string): boolean;
   /** Takes URLs as returned by put() and list(). */
   remove(urls: string[]): Promise<void>;
 };
 
 const ONE_YEAR = 60 * 60 * 24 * 365;
-
-// The store's public web address, worked out the way @vercel/blob does it,
-// from the store id inside the read-write token (vercel_blob_rw_<id>_…).
-function blobPublicUrl(pathname: string): string {
-  const storeId = process.env.BLOB_STORE_ID || (process.env.BLOB_READ_WRITE_TOKEN ?? "").split("_")[3];
-  if (!storeId) throw new Error("Can't tell which Blob store to read from.");
-  return `https://${storeId.replace(/^store_/, "").toLowerCase()}.public.blob.vercel-storage.com/${pathname}`;
-}
 
 const blobBackend: Backend = {
   async put(pathname, body, contentType) {
@@ -67,11 +63,8 @@ const blobBackend: Backend = {
     if (!res.ok) throw new Error(`Could not read ${file.pathname} (HTTP ${res.status})`);
     return res.text();
   },
-  async readBytes(pathname) {
-    const res = await fetch(blobPublicUrl(pathname), { signal: AbortSignal.timeout(20_000) });
-    if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`Could not read ${pathname} (HTTP ${res.status})`);
-    return Buffer.from(await res.arrayBuffer());
+  holds(url) {
+    return /^https:\/\/[a-z0-9]+\.public\.blob\.vercel-storage\.com\//.test(url);
   },
   async remove(urls) {
     if (urls.length > 0) await del(urls);
@@ -119,13 +112,8 @@ const localBackend: Backend = {
   async read(file) {
     return readFile(requireLocalFilePath(file.pathname), "utf8");
   },
-  async readBytes(pathname) {
-    try {
-      return await readFile(requireLocalFilePath(pathname));
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-      throw error;
-    }
+  holds(url) {
+    return url.startsWith(LOCAL_URL_PREFIX);
   },
   async remove(urls) {
     for (const url of urls) {
@@ -146,7 +134,7 @@ export function storageMode(): StorageMode {
 
 export class StorageNotConfiguredError extends Error {
   constructor() {
-    super("Photo storage is not connected. Connect a Vercel Blob store to this project.");
+    super("Storage is not connected. Connect a Vercel Blob store to this project.");
   }
 }
 
@@ -231,8 +219,8 @@ export async function saveMemory(memory: Memory): Promise<void> {
 
 export async function deleteMemoryAndPhotos(memory: Memory): Promise<void> {
   const files = await memoryFiles(memory.id);
-  await backend().remove([...files.map((f) => f.url), ...memory.photos.map((p) => p.url)]);
-  await forgetResizedCopies(memory.photos);
+  await backend().remove(files.map((f) => f.url));
+  await deletePhotoFiles(memory.photos);
 }
 
 // ---------------------------------------------------------------------------
@@ -240,36 +228,37 @@ export async function deleteMemoryAndPhotos(memory: Memory): Promise<void> {
 
 const PHOTO_ID = /^[\w-]{1,40}$/;
 
-function photoPath(id: string, ext = "jpg"): string {
-  return `photos/${id}/photo.${ext}`;
+function localPhotoPath(id: string): string {
+  return `photos/${id}/photo.jpg`;
 }
 
-export async function savePhoto(id: string, body: Buffer, contentType: string, ext: string): Promise<string> {
-  const file = await backend().put(photoPath(id, ext), body, contentType);
-  return file.url;
+/** Keeps a shared photo in the .data folder, when running without Firebase (see lib/photo-storage.ts). */
+export async function savePhotoLocally(id: string, body: Buffer): Promise<string> {
+  if (storageMode() !== "local") throw new Error("Photos are only kept here when running locally.");
+  return (await localBackend.put(localPhotoPath(id), body, "image/jpeg")).url;
 }
 
-/** A shared photo's file, or null if there's no such photo. */
-export async function readPhotoFile(id: string): Promise<Buffer | null> {
-  return PHOTO_ID.test(id) ? backend().readBytes(photoPath(id)) : null;
-}
-
-export async function deletePhotoFiles(photos: Photo[]): Promise<void> {
-  await backend().remove(photos.map((p) => p.url));
-  await forgetResizedCopies(photos);
-}
-
-// Vercel keeps the resized copies of each photo that app/img makes, in its CDN
-// and its Runtime Cache, for up to a year. Deleting by tag clears both, so a
-// deleted photo is really gone. Outside Vercel (e.g. npm run dev) it does nothing.
-async function forgetResizedCopies(photos: Photo[]) {
-  if (photos.length === 0) return;
+/** A photo kept in the .data folder, or null if there's no such photo. */
+export async function readLocalPhoto(id: string): Promise<Buffer | null> {
+  if (storageMode() !== "local" || !PHOTO_ID.test(id)) return null;
   try {
-    await dangerouslyDeleteByTag(photos.map((p) => photoCacheTag(p.id)));
-  } catch (cause) {
-    // The photo itself is gone; its copies are at addresses nobody can guess.
-    console.error("Removing resized copies of deleted photos failed", cause);
+    return await readFile(requireLocalFilePath(localPhotoPath(id)));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
   }
+}
+
+/**
+ * Removes the photos' files that are kept here: the old copies in Vercel Blob
+ * of photos shared before the move to Firebase, or photos in .data. Files in
+ * Firebase Storage stay, because storage.rules lets nobody delete them (see
+ * "Looking after the site" in the README). With the photo gone from its
+ * memory, the site no longer shows or links to them.
+ */
+export async function deletePhotoFiles(photos: Photo[]): Promise<void> {
+  const store = backend();
+  await store.remove(photos.map((p) => p.url).filter((url) => store.holds(url)));
 }
 
 // ---------------------------------------------------------------------------
