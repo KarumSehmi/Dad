@@ -2,7 +2,8 @@
 // carrying on through patchy connections and reporting progress as it goes.
 // Firebase's code is only downloaded when someone shares a video.
 
-import { videoPath, videoStorage } from "./video";
+import { firebaseBucket, firebaseEmulatorHost } from "./firebase-storage";
+import { videoPath } from "./video";
 
 type Sdk = typeof import("@firebase/storage");
 type Storage = ReturnType<Sdk["getStorage"]>;
@@ -15,10 +16,10 @@ function connect() {
       import("@firebase/app"),
       import("@firebase/storage"),
     ]);
-    const app = getApps().length ? getApp() : initializeApp({ storageBucket: videoStorage.bucket });
+    const app = getApps().length ? getApp() : initializeApp({ storageBucket: firebaseBucket });
     const storage = sdk.getStorage(app);
-    if (videoStorage.emulatorHost) {
-      const [host, port] = videoStorage.emulatorHost.split(":");
+    if (firebaseEmulatorHost) {
+      const [host, port] = firebaseEmulatorHost.split(":");
       sdk.connectStorageEmulator(storage, host, Number(port));
     }
     // Keep retrying for a good while: phones drop signal, and big videos take time.

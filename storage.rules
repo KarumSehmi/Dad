@@ -2,16 +2,32 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Videos shared on Harvey's memorial site, each saved at the top level as
-    // video-<32 hex digits>.<ext> (see lib/video.ts). Anyone can watch them
-    // and add new ones (video files under 500 MB), but nobody can browse the
-    // list, or change or delete what's there.
+    // Photos and videos shared on Harvey's memorial site, all saved at the
+    // top level (see lib/firebase-storage.ts):
+    //   photo-<id>.jpg          a photo as it was shared (under 5 MB)
+    //   photo-<id>.<width>.jpg  a smaller copy of it, at each width the site shows
+    //   video-<id>.<ext>        a video (under 500 MB, id is 32 hex digits)
+    // Anyone can see them and add new ones, but nobody can browse the list,
+    // or change or delete what's there.
     match /{file} {
-      allow get: if file.matches('video-[0-9a-f]{32}[.][a-z0-9]{2,4}');
-      allow create: if resource == null
-        && file.matches('video-[0-9a-f]{32}[.][a-z0-9]{2,4}')
-        && request.resource.size < 500 * 1024 * 1024
-        && request.resource.contentType.matches('video/.+');
+      allow get: if isPhoto(file) || isVideo(file);
+      allow create: if resource == null && (
+        (isPhoto(file)
+          && request.resource.size < 5 * 1024 * 1024
+          && request.resource.contentType == 'image/jpeg')
+        || (isVideo(file)
+          && request.resource.size < 500 * 1024 * 1024
+          && request.resource.contentType.matches('video/.+'))
+      );
+    }
+
+    // The widths are PHOTO_WIDTHS in lib/image-url.ts.
+    function isPhoto(name) {
+      return name.matches('photo-[A-Za-z0-9_-]{1,40}([.](256|384|640|828|1080|1440|2048))?[.]jpg');
+    }
+
+    function isVideo(name) {
+      return name.matches('video-[0-9a-f]{32}[.][a-z0-9]{2,4}');
     }
 
     // The first videos were saved in folders as videos/<id>/video.<ext>.

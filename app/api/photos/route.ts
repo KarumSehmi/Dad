@@ -1,6 +1,6 @@
 import { jpegSize } from "@/lib/jpeg";
+import { PhotoStorageNotConfiguredError, savePhoto } from "@/lib/photo-storage";
 import { clientIp, randomId, rateLimit, signPhoto } from "@/lib/security";
-import { savePhoto, StorageNotConfiguredError } from "@/lib/storage";
 import type { Photo } from "@/lib/types";
 import { isHexColor, LIMITS } from "@/lib/validate";
 
@@ -21,8 +21,9 @@ function isSameOrigin(request: Request): boolean {
 }
 
 // Receives one photo that the browser has already resized and re-encoded as
-// JPEG (which also strips location data), stores it, and returns a signed
-// receipt that createMemory() checks before attaching the photo to a memory.
+// JPEG (which also strips location data), stores it in Firebase Storage with a
+// copy at every width the site shows (lib/photo-storage.ts), and returns a
+// signed receipt that createMemory() checks before attaching the photo to a memory.
 export async function POST(request: Request) {
   if (!isSameOrigin(request)) return error("Not allowed.", 403);
 
@@ -51,12 +52,12 @@ export async function POST(request: Request) {
   const color = form.get("color");
   const id = randomId();
   try {
-    const url = await savePhoto(id, body, "image/jpeg", "jpg");
+    const url = await savePhoto(id, body);
     const photo: Photo = { id, url, ...size, color: isHexColor(color) ? color.toLowerCase() : "#d9d0c3" };
     return Response.json({ photo, receipt: signPhoto(photo) });
   } catch (cause) {
     console.error("Photo upload failed", cause);
-    if (cause instanceof StorageNotConfiguredError) return error(cause.message, 503);
+    if (cause instanceof PhotoStorageNotConfiguredError) return error(cause.message, 503);
     return error("We couldn't save this photo just now. Please try again.", 500);
   }
 }

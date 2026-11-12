@@ -4,6 +4,7 @@ import { updateTag } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { isAdmin } from "@/lib/admin";
 import { MEMORIES_TAG, SETTINGS_TAG } from "@/lib/data";
+import { storedFileMediaUrl, storedFileUrl } from "@/lib/firebase-storage";
 import {
   ADMIN_COOKIE,
   ADMIN_FLAG_COOKIE,
@@ -26,7 +27,7 @@ import {
 } from "@/lib/storage";
 import type { ActionResult, Memory, Photo, Video } from "@/lib/types";
 import { cleanText, isHexColor, LIMITS } from "@/lib/validate";
-import { isVideoExtension, storedFileUrl, VIDEO_ID, videoPath, videosEnabled } from "@/lib/video";
+import { isVideoExtension, VIDEO_ID, videoPath, videosEnabled } from "@/lib/video";
 import { isListedRelationship } from "@/site.config";
 
 export type NewMemoryInput = {
@@ -77,7 +78,7 @@ async function checkVideo(value: unknown): Promise<Video | null> {
     typeof v.duration === "number" && v.duration > 0 && v.duration < 24 * 60 * 60
       ? Math.round(v.duration * 10) / 10
       : undefined;
-  return { url: `${storedFileUrl(path)}?alt=media`, type, size, ...(duration && { duration }) };
+  return { url: storedFileMediaUrl(path), type, size, ...(duration && { duration }) };
 }
 
 export async function createMemory(input: NewMemoryInput): Promise<ActionResult<{ id: string }>> {

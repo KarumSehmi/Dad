@@ -15,8 +15,8 @@ import {
   type ReactNode,
 } from "react";
 import { deletePhoto, setPortrait } from "@/app/actions";
-import { downloadUrl, formatDate } from "@/lib/format";
-import { resizedImageUrl } from "@/lib/image-url";
+import { formatDate } from "@/lib/format";
+import { photoDownloadUrl, resizedImageUrl } from "@/lib/image-url";
 import type { GalleryPhoto } from "@/lib/types";
 import { useIsAdmin } from "@/lib/use-is-admin";
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, DownloadIcon, StarIcon, TrashIcon } from "./icons";
@@ -111,7 +111,7 @@ function Lightbox({
               <span className="lb-btn-label">Download</span>
             </a>
           ) : (
-            <a className="lb-btn" href={downloadUrl(photo.url)} download>
+            <a className="lb-btn" href={photoDownloadUrl(photo.url)} download>
               <DownloadIcon />
               <span className="lb-btn-label">Download</span>
             </a>
