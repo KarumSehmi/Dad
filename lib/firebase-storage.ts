@@ -1,11 +1,12 @@
-// Every photo and video shared on the site is kept in a Firebase Storage
-// bucket, and visitors' browsers load them straight from there. Vercel only
-// serves the pages and keeps the memories' words (lib/storage.ts).
+// Everything shared on the site is kept in a Firebase Storage bucket. Visitors'
+// browsers load the photos and videos straight from there, and only the site
+// can reach the memories' words (lib/storage.ts, lib/firebase-admin.ts).
+// Vercel only builds and serves the pages.
 //
 // Firebase is pay-as-you-go: past its free allowance it charges a few pence,
 // where Vercel Blob's free plan blocks the whole store for 30 days. That
-// happened in November 2026 and took every photo off the site, so photos must
-// never go back to Vercel Blob or be served through Vercel.
+// happened in November 2026 and took every photo off the site, so nothing must
+// go back to Vercel Blob or be served through Vercel.
 //
 // Switched on by NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET (see the README); who may
 // read and add files is set by storage.rules.
